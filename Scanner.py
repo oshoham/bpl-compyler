@@ -50,6 +50,12 @@ class Token:
 
 class Scanner:
     
+    keywords = ["int", "void", "string", "if", "else", "while",
+            "return", "write", "writeln", "read"]
+    keyword_tokens = ['T_INT', 'T_VOID', 'T_STRING', 'T_IF', 'T_ELSE',
+            'T_WHILE', 'T_RETURN', 'T_WRITE', 'T_WRITELN', 'T_READ']
+    keyword_hash = dict(zip(keywords, keyword_tokens)) 
+
     def __init__(self, file_name):
         self.input_file = open(file_name)
         self.current_line = self.input_file.readline()
@@ -80,7 +86,10 @@ class Scanner:
                 while(j < len(self.current_line) and self.current_line[j].isalnum()):
                     j += 1
                 token_string = self.current_line[i:j]
-                self.next_token = Token('T_ID', token_string, self.line_number)
+                if(token_string in keywords):
+                    self.next_token = Token(keyword_hash[token_string], token_string, self.line_number)
+                else:
+                    self.next_token = Token('T_ID', token_string, self.line_number)
                 self.current_line = self.current_line[j:]
             elif(self.current_line[i] == '+'):
                 self.next_token = Token('T_PLUS', "+", self.line_number)
