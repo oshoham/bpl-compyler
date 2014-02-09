@@ -1,4 +1,6 @@
-# acking together an Enum data type
+import sys
+
+# Hacking together an Enum data type
 def enum(*sequential, **named):
     enums = dict(zip(sequential, range(len(sequential))), **named)
     return type('Enum', (), enums)
@@ -63,11 +65,11 @@ class Token:
 # get_next_token() to step through the file, one Token at a time.
 class Scanner:
 
-    # Constructor for the Scanner. Attempts to open the specified input file,
+    # Constructor for the Scanner. Takes a file object as the only parameter,
     # sets the current line to the first line of said file, initalizes next_token
     # to None, and sets up a dictionary of keywords mapped to their respective TokenTypes.
-    def __init__(self, file_name):
-        self.input_file = open(file_name)
+    def __init__(self, input_file):
+        self.input_file = input_file
         self.current_line = self.input_file.readline()
         self.line_number = 1
         self.next_token = None
@@ -244,12 +246,24 @@ class Scanner:
                 print("ERROR: Unidentifiable Token at line " + str(self.line_number) + ", index " + str(i) + ".")
                 exit()
 
+# If this module is run as a stand-alone program, it will optionally
+# take an input file name as a command-line argument. If no file name is
+# provided, "test.bpl" will be used by default.
 def main():
-    scanner = Scanner("test2.bpl")
+    file_name = "test.bpl"
+    if len(sys.argv) > 1:
+        file_name = sys.argv[1]
+    try:
+        input_file = open(file_name)
+    except IOError:
+        print("ERROR: File not found!")
+        exit()
+    scanner = Scanner(input_file)
     scanner.get_next_token()
     while(scanner.next_token.kind != TokenType.T_EOF):
         print(scanner.next_token)
         scanner.get_next_token()
+    input_file.close()
 
 if __name__ == "__main__":
     main()
