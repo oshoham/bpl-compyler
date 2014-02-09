@@ -38,6 +38,7 @@ TokenType = enum('T_ID',
         'T_DIV',
         'T_MOD',
         'T_AND',
+        'T_STRVAL',
         'T_EOF')
 
 # A Token is the atomic unit of BPL. Each Token keeps track of its kind, 
@@ -207,7 +208,7 @@ class Scanner:
                         if(j == len(self.current_line)):
                             self.current_line = self.input_file.readline()
                             if not self.current_line:
-                                print("ERROR: Comment block beginning at line " + str(self.line_number) + ", index " + str(i) + " is never closed.")
+                                print("ERROR: Expected an additional '/*' to close the comment block beginning at line " + str(self.line_number) + ", index " + str(i) + ".")
                                 exit()
                             else:
                                 new_line_number += 1
@@ -228,13 +229,23 @@ class Scanner:
             elif(self.current_line[i] == '&'):
                 self.next_token = Token('T_AND', "&", self.line_number)
                 self.current_line = self.current_line[i+1:]
+            elif(self.current_line[i] == '"'):
+                j = i+1
+                while(self.current_line[j] != '"'):
+                    j += 1
+                    if(j == len(self.current_line)):
+                        print("ERROR: Expected an additional '\"' to close the string beginning at line " + str(self.line_number) + ", index " + str(i) + ".")
+                        exit()
+                token_string = self.current_line[i+1:j]
+                self.next_token = Token('T_STRVAL', token_string, self.line_number)
+                self.current_line = self.current_line[j+1:]
             # we've hit something we can't recognize
             else:
                 print("ERROR: Unidentifiable Token at line " + str(self.line_number) + ", index " + str(i) + ".")
                 exit()
 
 def main():
-    scanner = Scanner("test.bpl")
+    scanner = Scanner("test2.bpl")
     scanner.get_next_token()
     while(scanner.next_token.kind != TokenType.T_EOF):
         print(scanner.next_token)
