@@ -210,7 +210,7 @@ class Scanner:
                         if(j == len(self.current_line)):
                             self.current_line = self.input_file.readline()
                             if not self.current_line:
-                                print("ERROR: Expected an additional '/*' to close the comment block beginning at line " + str(self.line_number) + ", index " + str(i) + ".")
+                                print("Scanning Error: Expected an additional '/*' to close the comment block beginning at line " + str(self.line_number) + ", index " + str(i) + ".")
                                 exit()
                             else:
                                 new_line_number += 1
@@ -236,14 +236,14 @@ class Scanner:
                 while(self.current_line[j] != '"'):
                     j += 1
                     if(j == len(self.current_line)):
-                        print("ERROR: Expected an additional '\"' to close the string beginning at line " + str(self.line_number) + ", index " + str(i) + ".")
+                        print("Scanning Error: Expected an additional '\"' to close the string beginning at line " + str(self.line_number) + ", index " + str(i) + ".")
                         exit()
                 token_string = self.current_line[i+1:j]
                 self.next_token = Token('T_STRVAL', token_string, self.line_number)
                 self.current_line = self.current_line[j+1:]
             # we've hit something we can't recognize
             else:
-                print("ERROR: Unidentifiable Token at line " + str(self.line_number) + ", index " + str(i) + ".")
+                print("Scanning Error: Unidentifiable token at line " + str(self.line_number) + ", index " + str(i) + ".")
                 exit()
 
 # If this module is run as a stand-alone program, it will optionally
@@ -256,7 +256,7 @@ def main():
     try:
         input_file = open(file_name)
     except IOError:
-        print("ERROR: File not found!")
+        print("Error: File not found!")
         exit()
     scanner = Scanner(input_file)
     scanner.get_next_token()
