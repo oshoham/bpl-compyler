@@ -5,8 +5,7 @@ DATE: Feb. 16, 2014
 A lexical scanner for the BPL programming language. Implemented for CS331 at Oberlin College.
 """
 
-import sys
-from Token import *
+from bpl.scanner.token import TokenType, Token
 
 # The Scanner performs a lexical analysis of a BPL file. It keeps track of
 # its current position in the file, and uses the variable next_token and the method 
@@ -193,25 +192,3 @@ class Scanner(object):
             else:
                 print("Scanning Error: Unidentifiable token at line " + str(self.line_number) + ", index " + str(i) + ".")
                 exit()
-
-# If this module is run as a stand-alone program, it will optionally
-# take an input file name as a command-line argument. If no file name is
-# provided, "test.bpl" will be used by default.
-def main():
-    file_name = "test.bpl"
-    if len(sys.argv) > 1:
-        file_name = sys.argv[1]
-    try:
-        input_file = open(file_name)
-    except IOError:
-        print("Error: File not found!")
-        exit()
-    scanner = Scanner(input_file)
-    scanner.get_next_token()
-    while(scanner.next_token.kind != TokenType.T_EOF):
-        print(scanner.next_token)
-        scanner.get_next_token()
-    input_file.close()
-
-if __name__ == "__main__":
-    main()
