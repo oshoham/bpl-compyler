@@ -5,7 +5,8 @@ DATE: Feb. 16, 2014
 A Parser for the BPL programming language. Implemented for CS331 at Oberlin College.
 """
 
-from Scanner import *
+from bpl.scanner.scanner import Scanner
+from bpl.scanner.token import TokenType, Token
 
 NodeType = enum('DECLARATION',
         'STATEMENT',
@@ -51,7 +52,7 @@ class ExpressionStatement(StatementNode):
 class ParserException(Exception):
     pass
 
-class Parser:
+class Parser(object):
 
     def __init__(self, input_file):
         self.scanner = Scanner(input_file)
