@@ -6,7 +6,7 @@ A Parser for the BPL programming language. Implemented for CS331 at Oberlin Coll
 """
 
 from bpl.scanner.scanner import Scanner
-from bpl.scanner.token import TokenType, Token
+from bpl.scanner.token import TokenType, Token, is_type_token
 
 NodeType = enum('DECLARATION',
         'STATEMENT',
