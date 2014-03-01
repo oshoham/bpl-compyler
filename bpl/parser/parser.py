@@ -61,14 +61,16 @@ class VarExpNode(ExpressionNode):
         self.name = name
 
 class ParserException(Exception):
-    def __init__(self, message):
+    def __init__(self, line_number, message):
+        message = 'Error on line {}: {}'.format(line_number, message)
         Exception.__init__(self, message)
 
 class Parser(object):
 
     def __init__(self, input_file):
+        """Initialize a Scanner using 'input_file' and set its current token to the first token in 'input_file'."""
         self.scanner = Scanner(input_file)
-        self.scanner.next_token = scanner.get_next_token()
+        self.scanner.get_next_token()
 
     def parse(self):
         pass
@@ -77,15 +79,15 @@ class Parser(object):
         pass
 
     def expect(self, token, message):
+        """Consume the current token, raising an error if it is not of the expected type."""
         current_token = self.scanner.next_token
         if current_token.kind != getattr(TokenType, token):
-            raise ParserException('Parser error on line {}: {}'.format(
-                self.scanner.line_number,
-                message))
+            raise ParserException(self.scanner.line_number, message)
         self.scanner.get_next_token()
         return current_token
 
     def declaration_list(self):
+        """Return a linked list of declaration nodes."""
         d = declaration()
         head = d
         while self.scanner.next_token.kind != TokenType.T_EOF:
@@ -95,10 +97,11 @@ class Parser(object):
         return head
 
     def declaration(self, local=False):
+        """Return a single variable, array, or function declaration node."""
         is_pointer = False
         line_number = self.scanner.line_number
         if not is_type_token(self.scanner.next_token):
-            raise ParserException('Error on line {}: Expected a type token to begin a declaration.'.format(line_number))
+            raise ParserException(line_number, 'Expected a type token to begin a declaration.')
         type_token = self.scanner.next_token
         self.scanner.get_next_token()
 
@@ -124,9 +127,9 @@ class Parser(object):
         # handle function delcarations
         elif self.scanner.next_token.kind == TokenType.T_LPAREN:
             if is_pointer:
-                raise ParserException('Error on line {}: Cannot declare a pointer to a function.'.format(line_number))
+                raise ParserException(line_number, 'Cannot declare a pointer to a function.')
             if local:
-                raise ParserException('Error on line {}: Cannot declare a function inside a compound statement.'.format(line_number))
+                raise ParserException(line_number, 'Cannot declare a function inside a compound statement.')
             self.scanner.get_next_token()
             parameters = self.params()
             self.expect('T_RPAREN', 'Expected a right parenthesis to end the function parameter declarations.')
@@ -134,9 +137,10 @@ class Parser(object):
             return FunDecNode('FUN_DEC', line_number, id_token.value, type_token, params, body)
 
         else:
-            raise ParserException('Error on line {}: Unexpected token in declaration.'.format(line_number))
+            raise ParserException(line_number, 'Unexpected token in declaration.')
 
     def statement(self):
+        """Return a single statement node, which can be one of many types."""
         if self.scanner.next_token.kind == TokenType.T_LBRACE:
             return self.compound_statement()
         elif self.scanner.next_token.kind == TokenType.T_IF:
@@ -152,6 +156,7 @@ class Parser(object):
             return self.expression_statement()
 
     def expression_statement(self):
+        """Return an expression statement node that points to an expression node."""
         exp = None
         line_number = self.scanner.line_number
         if self.scanner.next_token.kind != TokenType.T_SEMICOLON:
@@ -160,4 +165,5 @@ class Parser(object):
         return ExpressionStatementNode('EXP_STATEMENT', line_number, expression)
 
     def expression(self):
+        """Return a single expression node."""
         pass
