@@ -13,50 +13,67 @@ NodeType = enum('DECLARATION',
         'EXPRESSION')
 
 class TreeNode(object):
-    def __init__(self, kind, line_number):
+    def __init__(self, kind, line_number, next_node=None):
         self.kind = getattr(NodeType, kind)
         self.line_number = line_number
+        self.next_node = next_node
 
 class DecNode(TreeNode):
-    def __init__(self, kind, line_number, next_dec)
-        TreeNode.__init__(self, kind, line_number)
-        self.next_dec = next_dec
+    def __init__(self, kind, line_number, name, type_token, next_node = None)
+        TreeNode.__init__(self, kind, line_number, next_node)
+        self.name = name
+        self.type_token = type_token
 
 class VarDecNode(DecNode):
-    def __init__(self, kind, line_number, next_dec, token_type, is_pointer = False):
-        DecNode.__init__(self, kind, line_number, next_dec)
-        self.token_type = token_type
+    def __init__(self, kind, line_number, name, type_token, is_pointer = False, next_node = None):
+        DecNode.__init__(self, kind, line_number, name, type_token, next_node)
         self.is_pointer = is_pointer
 
 class FunDecNode(DecNode):
-    def __init__(self, kind, line_number, next_dec, return_type, params, body):
-        DecNode.__init__(self, kind, line_number, next_dec)
-        self.return_type = return_type
+    def __init__(self, kind, line_number, name, type_token, params, body, next_node = None):
+        DecNode.__init__(self, kind, line_number, name, type_token, next_node)
         self.params = params
         self.body = body
 
 class ArrayDecNode(VarDecNode):
-    def __init__(self, kind, line_number, next_dec, token_type, is_pointer = False, size):
-        VarDecNode.__init__(self, kind, line_number, next_dec, token_type, is_pointer)
+    def __init__(self, kind, line_number, name, type_token, size, is_pointer = False, next_node = None):
+        VarDecNode.__init__(self, kind, line_number, name, type_token, is_pointer, next_node)
         self.size = size
 
 class StatementNode(TreeNode):
-    def __init__(self, kind, line_number, next_statement):
-        TreeNode.__init__(self, kind, line_number)
-        self.next_statement = next_statement
+    def __init__(self, kind, line_number, next_node = None):
+        TreeNode.__init__(self, kind, line_number, next_node)
 
 class ExpressionStatement(StatementNode):
-    def __init__(self, kind, line_number, next_statement):
-        StatementNode.__init__(self, kind, line_number, next_statement)
+    def __init__(self, kind, line_number, expression, next_node = None):
+        StatementNode.__init__(self, kind, line_number, next_node)
+        self.expression = expression
+
+class ExpressionNode(TreeNode):
+    def __init__(self, kind, line_number, next_node = None):
+        TreeNode.__init__(self, kind, line_number, next_node)
+
+class VarExpNode(ExpressionNode):
+    def __init__(self, kind, line_number, name, next_node = None):
+        ExpressionNode.__init__(self, kind, line_number, next_node)
+        self.name = name
 
 class ParserException(Exception):
-    pass
+    def __init__(self, message):
+        Exception.__init__(self, message)
 
 class Parser(object):
 
     def __init__(self, input_file):
         self.scanner = Scanner(input_file)
         self.scanner.next_token = scanner.get_next_token()
+
+    def expect(self, token, message):
+        current_token = self.scanner.next_token
+        if current_token.kind != getattr(TokenType, token):
+            raise ParserException(message)
+        self.scanner.get_next_token()
+
 
     def declaration_list(self):
         d = declaration()
