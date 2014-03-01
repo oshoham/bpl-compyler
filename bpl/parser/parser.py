@@ -73,10 +73,16 @@ class Parser(object):
         self.scanner.get_next_token()
 
     def parse(self):
-        pass
+        """Attempt to parse the Parser's input file, catching ParserExceptions."""
+        try:
+            parse_tree = self.program()
+        except ParserException as p:
+            print p.message
+        return parse_tree
 
     def program(self):
-        pass
+        """Return a complete parse tree."""
+        return self.statement()
 
     def expect(self, token, message):
         """Consume the current token, raising an error if it is not of the expected type."""
@@ -166,4 +172,6 @@ class Parser(object):
 
     def expression(self):
         """Return a single expression node."""
-        pass
+        line_number = self.scanner.line_number
+        id_token = self.expect('T_ID', 'Expected an identifier as part of the variable expression.')
+        return VarExpNode('VAR_EXP', line_number, id_token.value)
