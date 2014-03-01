@@ -46,7 +46,7 @@ class StatementNode(TreeNode):
     def __init__(self, kind, line_number, next_node = None):
         TreeNode.__init__(self, kind, line_number, next_node)
 
-class ExpressionStatement(StatementNode):
+class ExpressionStatementNode(StatementNode):
     def __init__(self, kind, line_number, expression, next_node = None):
         StatementNode.__init__(self, kind, line_number, next_node)
         self.expression = expression
@@ -69,6 +69,12 @@ class Parser(object):
     def __init__(self, input_file):
         self.scanner = Scanner(input_file)
         self.scanner.next_token = scanner.get_next_token()
+
+    def parse(self):
+        pass
+
+    def program(self):
+        pass
 
     def expect(self, token, message):
         current_token = self.scanner.next_token
@@ -129,3 +135,29 @@ class Parser(object):
 
         else:
             raise ParserException('Error on line {}: Unexpected token in declaration.'.format(line_number))
+
+    def statement(self):
+        if self.scanner.next_token.kind == TokenType.T_LBRACE:
+            return self.compound_statement()
+        elif self.scanner.next_token.kind == TokenType.T_IF:
+            return self.if_statement()
+        elif self.scanner.next_token.kind == TokenType.T_WHILE:
+            return self.while_statement()
+        elif self.scanner.next_token.kind == TokenType.T_RETURN:
+            return self.return_statement()
+        elif self.scanner.next_token.kind == TokenType.T_WRITE or \
+                self.scanner.next_token.kind == TokenType.T_WRITELN:
+            return self.write_statement()
+        else:
+            return self.expression_statement()
+
+    def expression_statement(self):
+        exp = None
+        line_number = self.scanner.line_number
+        if self.scanner.next_token.kind != TokenType.T_SEMICOLON:
+            exp = self.expression()
+        self.expect('T_SEMICOLON', 'Expected a semicolon to end the expression.')
+        return ExpressionStatementNode('EXP_STATEMENT', line_number, expression)
+
+    def expression(self):
+        pass
