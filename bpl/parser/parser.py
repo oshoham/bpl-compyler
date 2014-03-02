@@ -6,84 +6,9 @@ A Parser for the BPL programming language. Implemented for CS331 at Oberlin Coll
 """
 
 from bpl.scanner.scanner import Scanner
-from bpl.scanner.token import TokenType, Token, is_type_token, enum
+from bpl.scanner.token import TokenType, Token, is_type_token
+from bpl.parser.parsetree import *
 
-NodeType = enum('VAR_DEC',
-        'FUN_DEC',
-        'ARRAY_DEC',
-        'VAR_EXP',
-        'EXP_STATEMENT',
-        'STATEMENT',
-        'EXPRESSION')
-
-class TreeNode(object):
-    def __init__(self, kind, line_number, next_node=None):
-        self.kind = getattr(NodeType, kind)
-        self.line_number = line_number
-        self.next_node = next_node
-        self.base_string = 'Line {}: {}'.format(
-                self.line_number,
-                self.__class__.__name__
-                )
-
-    def str_plus_next_node(self, string):
-        if self.next_node is not None:
-            string += '\n{}'.format(str(next_node))
-        return string
-
-class DecNode(TreeNode):
-    def __init__(self, kind, line_number, name, type_token, next_node = None):
-        TreeNode.__init__(self, kind, line_number, next_node)
-        self.name = name
-        self.type_token = type_token
-
-class VarDecNode(DecNode):
-    def __init__(self, kind, line_number, name, type_token, is_pointer = False, next_node = None):
-        DecNode.__init__(self, kind, line_number, name, type_token, next_node)
-        self.is_pointer = is_pointer
-
-class FunDecNode(DecNode):
-    def __init__(self, kind, line_number, name, type_token, params, body, next_node = None):
-        DecNode.__init__(self, kind, line_number, name, type_token, next_node)
-        self.params = params
-        self.body = body
-
-class ArrayDecNode(VarDecNode):
-    def __init__(self, kind, line_number, name, type_token, size, is_pointer = False, next_node = None):
-        VarDecNode.__init__(self, kind, line_number, name, type_token, is_pointer, next_node)
-        self.size = size
-
-class StatementNode(TreeNode):
-    def __init__(self, kind, line_number, next_node = None):
-        TreeNode.__init__(self, kind, line_number, next_node)
-
-class ExpressionStatementNode(StatementNode):
-    def __init__(self, kind, line_number, expression, next_node = None):
-        StatementNode.__init__(self, kind, line_number, next_node)
-        self.expression = expression
-
-    def __str__(self):
-        string = '{}\n{}'.format(
-                self.base_string,
-                str(self.expression)
-                )
-        return self.str_plus_next_node(string)
-
-class ExpressionNode(TreeNode):
-    def __init__(self, kind, line_number, next_node = None):
-        TreeNode.__init__(self, kind, line_number, next_node)
-
-class VarExpNode(ExpressionNode):
-    def __init__(self, kind, line_number, name, next_node = None):
-        ExpressionNode.__init__(self, kind, line_number, next_node)
-        self.name = name
-
-    def __str__(self):
-        string = '{} id = {}'.format(
-                self.base_string,
-                self.name
-                )
-        return self.str_plus_next_node(string)
 
 class ParserException(Exception):
     def __init__(self, line_number, message):
@@ -120,11 +45,11 @@ class Parser(object):
 
     def declaration_list(self):
         """Return a linked list of declaration nodes."""
-        d = declaration()
+        d = self.declaration()
         head = d
         while self.scanner.next_token.kind != TokenType.T_EOF:
-            d1 = declaration()
-            d.next_dec = d1
+            d1 = self.declaration()
+            d.next_node = d1
             d = d1
         return head
 
@@ -200,4 +125,34 @@ class Parser(object):
         """Return a single expression node."""
         line_number = self.scanner.line_number
         id_token = self.expect('T_ID', 'Expected an identifier as part of the variable expression.')
-        return VarExpNode('VAR_EXP', line_number, id_token.value)
+        return VariableNode('VAR_EXP', line_number, id_token.value)
+
+    def statement_list(self):
+        head = None
+        if self.scanner.next_token.kind != TokenType.T_RBRACE:
+            s = self.statement()
+            head = s
+            while self.scanner.next_token.kind != TokenType.T_RBRACE:
+                s1 = self.statement()
+                s.next_node = s1
+                s = s1
+        return head
+
+    def local_decs(self):
+        head = None
+        if is_type_token(self.scanner.next_token):
+            l = self.declaration(local=True)
+            head = l
+            while is_type_token(self.scanner.next_token):
+                l1 = self.declaration(local=True)
+                l.next_node = l1
+                l = l1
+        return head
+
+    def compound_statement(self):
+        line_number = self.scanner.line_number
+        self.expect('T_LBRACE', 'Expected a left curly brace to begin the compound statement.')
+        local_declarations = self.local_decs()
+        statements = self.statement_list()
+        self.expect('T_RBRACE', 'Expected a right curly brace to end the compound statement.')
+        return CompoundStatementNode('CMPND_STATEMENT', line_number, local_declarations, statements)
