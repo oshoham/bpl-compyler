@@ -10,19 +10,19 @@ from bpl.scanner.token import TokenType, Token, enum
 NodeType = enum('VAR_DEC',
         'FUN_DEC',
         'ARRAY_DEC',
-        'VAR_EXP',
         'EXP_STATEMENT',
         'CMPND_STATEMENT',
         'WHILE_STATEMENT',
-        'STATEMENT',
-        'EXPRESSION')
-
-def str_if_not_none(x):
-    """Return str(x) if x is not None. Otherwise, return the empty string."""
-    string = ''
-    if x is not None:
-        string += '\n{}'.format(str(x))
-    return string
+        'VAR_EXP',
+        'ASSIGN_EXP',
+        'COMP_EXP',
+        'ARRAY_EXP',
+        'ADDRESS_EXP',
+        'DEREF_EXP',
+        'FUN_CALL_EXP',
+        'MATH_EXP',
+        'NEG_EXP'
+)
 
 class TreeNode(object):
     def __init__(self, kind, line_number, next_node=None):
@@ -128,7 +128,7 @@ class ExpressionNode(TreeNode):
     def __init__(self, kind, line_number, next_node = None):
         TreeNode.__init__(self, kind, line_number, next_node)
 
-class VariableNode(ExpressionNode):
+class VarExpNode(ExpressionNode):
     def __init__(self, kind, line_number, name, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.name = name
@@ -157,3 +157,37 @@ class OpNode(ExpressionNode):
                 str_if_not_none(self.next_node)
         ) 
         return string
+
+class ArrayExpNode(VarExpNode):
+    def __init__(self, kind, line_number, name, expression, next_node = None):
+        VarExpNode.__init__(self, kind, line_number, name, next_node)
+        self.expression = expression
+
+    def __str__(self):
+        string = '{} id = {}\n\texpression: {}{}'.format(
+                self.base_string,
+                self.name,
+                str(self.expression),
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+class DerefExpNode(ExpressionNode):
+    def __init__(self, kind, line_number, expression, next_node = None):
+        ExpressionNode.__init__(self, kind, line_number, next_node)
+        self.expression = expression
+
+    def __str__(self):
+        string = '{}\n\texpression: {}{}'.format(
+                self.base_string,
+                str(self.expression),
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+def str_if_not_none(x):
+    """Return str(x) if x is not None. Otherwise, return the empty string."""
+    string = ''
+    if x is not None:
+        string += '\n{}'.format(str(x))
+    return string

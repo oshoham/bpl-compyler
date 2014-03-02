@@ -6,7 +6,7 @@ A Parser for the BPL programming language. Implemented for CS331 at Oberlin Coll
 """
 
 from bpl.scanner.scanner import Scanner
-from bpl.scanner.token import TokenType, Token, is_type_token
+from bpl.scanner.token import TokenType, Token, is_type_token, is_relop
 from bpl.parser.parsetree import *
 
 
@@ -121,12 +121,6 @@ class Parser(object):
         self.expect('T_SEMICOLON', 'Expected a semicolon to end the expression.')
         return ExpressionStatementNode('EXP_STATEMENT', line_number, exp)
 
-    def expression(self):
-        """Return a single expression node."""
-        line_number = self.scanner.line_number
-        id_token = self.expect('T_ID', 'Expected an identifier as part of the variable expression.')
-        return VariableNode('VAR_EXP', line_number, id_token.value)
-
     def statement_list(self):
         """Return a linked list of statement nodes within a compound statement."""
         head = None
@@ -169,3 +163,42 @@ class Parser(object):
         self.expect('T_RPAREN', 'Expected a right parenthesis as part of the while statement.')
         stmnt = self.statement()
         return WhileStatementNode('WHILE_STATEMENT', line_number, cond, stmnt)
+
+    def expression(self):
+        """Return a single expression node."""
+        line_number = self.scanner.line_number
+
+        left = self.E()
+        
+        # handle assignment expressions
+        if self.next_token.kind == TokenType.T_ASSIGN:
+            # do some type checking stuff on left here to make sure it's a variable
+            if not (left.kind is NodeType.VAR_EXP or left.kind is NodeType.ARRAY_EXP or
+                    left.kind is NodeType.DEREF_EXP):
+                raise ParserException(line_number, 'Left side of assignment expression must be a variable, array reference, or pointer dereference.')
+            op_token = self.expect('T_ASSIGN', 'Expected an "=" as part of the assignment expression.')
+            right = self.expression()
+            return OpNode('ASSIGN_EXP', line_number, op_token, left, right)
+
+        # handle comparison expressions
+        elif is_relop(self.scanner.next_token):
+            op_token = self.scanner.next_token
+            self.scanner.get_next_token()
+            right = self.E()
+            return OpNode('COMP_EXP', line_number, op_token, left, right)
+
+        # handle single E expressions
+        else:
+            return left
+
+    def E(self):
+        pass
+
+    def T(self):
+        pass
+
+    def F(self):
+        pass
+
+    def Factor(self):
+        pass

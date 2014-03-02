@@ -47,7 +47,8 @@ TokenType = enum('T_ID',
         'T_MOD',
         'T_AND',
         'T_STRVAL',
-        'T_EOF')
+        'T_EOF'
+)
 
 # A Token is the atomic unit of BPL. Each Token keeps track of its kind, 
 # the actual string it represents, and the line number on which it occurs.
@@ -70,5 +71,14 @@ def is_type_token(token):
     if not isinstance(token, Token):
         return False
     if token.kind is TokenType.T_INT or token.kind is TokenType.T_VOID or token.kind is TokenType.T_STRING:
+        return True
+    return False
+
+def is_relop(token):
+    if not isinstance(token, Token):
+        return False
+    if token.kind is TokenType.T_LESS or token.kind is TokenType.T_LEQ or \
+            token.kind is TokenType.T_EQ or token.kind is TokenType.T_NEQ or \
+            token.kind is TokenType.T_GEQ or token.kind is TokenType.T_GREATER:
         return True
     return False
