@@ -181,7 +181,7 @@ class Parser(object):
             return OpNode('ASSIGN_EXP', line_number, op_token, left, right)
 
         # handle comparison expressions
-        elif is_relop(self.scanner.next_token):
+        elif is_rel_op(self.scanner.next_token):
             op_token = self.scanner.next_token
             self.scanner.get_next_token()
             right = self.E()
@@ -192,13 +192,47 @@ class Parser(object):
             return left
 
     def E(self):
-        pass
+        line_number = self.scanner.line_number
+        t = self.T()
+        while is_add_op(self.scanner.next_token):
+            op_token = self.scanner.next_token
+            self.scanner.get_next_token()
+            t1 = OpNode('MATH_EXP', line_number, op_token, None, None)
+            t1.left = t
+            t1.right = self.T()
+            t = t1
+        return t
 
     def T(self):
-        pass
+        line_number = self.scanner.line_number
+        f = self.F()
+        while is_mul_op(self.scanner.next_token):
+            op_token = self.scanner.next_token
+            f1 = OpNode('MATH_EXP', line_number, op_token, None, None)
+            f1.left = f
+            f1.right = self.F()
+            f = f1
+        return f
 
     def F(self):
-        pass
+        line_number = self.scanner.line_number
+        if self.scanner.next_token == TokenType.T_MINUS:
+            self.scanner.get_next_token()
+            f = self.F()
+            return NegExpNode('NEG_EXP', line_number, f)
+        
+        elif self.scanner.next_token.kind == TokenType.T_AND:
+            self.scanner.get_next_token()
+            fac = self.factor()
+            return AddressExpNode('ADDRESS_EXP', line_number, fac)
 
-    def Factor(self):
+        elif self.scanner.next_token.kind == TokenType.T_MULT:
+            self.scanner.get_next_token()
+            fac = self.factor()
+            return DerefExpNode('DEREF_EXP', line_number, fac)
+
+        else:
+            return self.factor()
+
+    def factor(self):
         pass

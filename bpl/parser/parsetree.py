@@ -185,6 +185,32 @@ class DerefExpNode(ExpressionNode):
         )
         return string
 
+class AddressExpNode(ExpressionNode):
+    def __init__(self, kind, line_number, expression, next_node = None):
+        ExpressionNode.__init__(self, kind, line_number, next_node)
+        self.expression = expression
+
+    def __str__(self):
+        string = '{}\n\texpression: {}{}'.format(
+                self.base_string,
+                str(self.expression),
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+class NegExpNode(ExpressionNode):
+    def __init__(self, kind, line_number, expression, next_node = None):
+        ExpressionNode.__init__(self, kind, line_number, next_node)
+        self.expression = expression
+
+    def __str__(self):
+        string = '{}\n\texpression: {}{}'.format(
+                self.base_string,
+                str(self.expression),
+                str_if_not_none(self.next_node)
+        )
+        return string
+
 def str_if_not_none(x):
     """Return str(x) if x is not None. Otherwise, return the empty string."""
     string = ''

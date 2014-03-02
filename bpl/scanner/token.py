@@ -74,11 +74,26 @@ def is_type_token(token):
         return True
     return False
 
-def is_relop(token):
+def is_rel_op(token):
     if not isinstance(token, Token):
         return False
     if token.kind is TokenType.T_LESS or token.kind is TokenType.T_LEQ or \
             token.kind is TokenType.T_EQ or token.kind is TokenType.T_NEQ or \
             token.kind is TokenType.T_GEQ or token.kind is TokenType.T_GREATER:
+        return True
+    return False
+
+def is_add_op(token):
+    if not isinstance(token, Token):
+        return False
+    if token.kind is TokenType.T_PLUS or token.kind is TokenType.T_MINUS:
+        return True
+    return False
+
+def is_mul_op(token):
+    if not isinstance(token, Token):
+        return False
+    if token.kind is TokenType.T_MULT or token.kind is TokenType.T_DIV or \
+            token.kind is TokenType.T_MOD:
         return True
     return False
