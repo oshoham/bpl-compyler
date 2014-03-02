@@ -235,4 +235,65 @@ class Parser(object):
             return self.factor()
 
     def factor(self):
-        pass
+        line_number = self.scanner.line_number
+
+        # handle parenthesized expressions
+        if self.scanner.next_token.kind == TokenType.T_LPAREN:
+            self.scanner.get_next_token()
+            exp = self.expression()
+            self.expect('T_RPAREN', 'Expected a right parenthesis to close the expression.')
+            return exp
+        
+        # handle number expressions
+        elif self.scanner.next_token.kind == TokenType.T_NUM:
+            number = self.expect('T_NUM', 'Expected a number as part of the expression.')
+            return NumExpNode('NUM_EXP', line_number, number)
+
+        # handle string expressions
+        elif self.scanner.next_token.kind == TokenType.T_STRVAL:
+            string = self.expect('T_STRVAL', 'Expected a string literal as part of the expression.')
+            return StringExpNode('STR_EXP', line_number, string)
+
+        # handle read expressions
+        elif self.scanner.next_token.kind == TokenType.T_READ:
+            self.scanner.get_next_token()
+            return ReadExpNode('READ_EXP', line_number)
+
+        # handle pointer dereference expressions
+        elif self.scanner.next_token.kind == TokenType.T_MULT:
+            self.scanner.get_next_token()
+            id_token = self.expect('T_ID', 'Expected an identifier as part of the pointer dereference.')
+            v = VarExpNode('VAR_EXP', line_number, id_token.value)
+            return DerefExpNode('DEREF_EXP', line_number, v)
+
+        else:
+            id_token = self.expect('T_ID', 'Expected an identifier as part of the expression.')
+
+            # handle array reference expressions
+            if self.scanner.next_token.kind == TokenType.T_LBRACKET:
+                self.scanner.get_next_token()
+                exp = self.expression()
+                self.expect('T_RBRACKET', 'Expected a right bracket to close the array reference.')
+                return ArrayExpNode('ARRAY_EXP', line_number, id_token.value, exp)
+
+            # handle function call expressions
+            elif self.scanner.next_token.kind == TokenType.T_LPAREN:
+                self.scanner.get_next_token()
+                arguments = self.args()
+                self.expect('T_RPAREN', 'Expected a right parenthesis to close the function call.')
+                return FunCallExpNode('FUN_CALL_EXP', line_number, id_token.value, arguments)
+
+            # handle variable expressions
+            else:
+                return VarExpNode('VAR_EXP', line_number, id_token.value)
+
+    def args(self):
+        head = None
+        if self.scanner.next_token.kind != TokenType.T_RPAREN:
+            arg = self.expression()
+            head = arg
+            if self.scanner.next_token.kind == TokenType.T_COMMA:
+                # consume comma
+            while self.scanner.next_token.kind != TokenType.T_RPAREN:
+                arg1 = 
+        return head

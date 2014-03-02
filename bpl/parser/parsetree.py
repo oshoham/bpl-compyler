@@ -21,7 +21,10 @@ NodeType = enum('VAR_DEC',
         'DEREF_EXP',
         'FUN_CALL_EXP',
         'MATH_EXP',
-        'NEG_EXP'
+        'NEG_EXP',
+        'NUM_EXP',
+        'STR_EXP',
+        'READ_EXP',
 )
 
 class TreeNode(object):
@@ -207,6 +210,54 @@ class NegExpNode(ExpressionNode):
         string = '{}\n\texpression: {}{}'.format(
                 self.base_string,
                 str(self.expression),
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+class NumExpNode(ExpressionNode):
+    def __init__(self, kind, line_number, number, next_node = None):
+        ExpressionNode.__init__(self, kind, line_number, next_node)
+        self.number = number
+    
+    def __str__(self):
+        string = '{} number = {}{}'.format(
+                self.base_string,
+                self.number,
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+class StringExpNode(ExpressionNode):
+    def __init__(self, kind, line_number, string, next_node = None):
+        ExpressionNode.__init__(self, kind, line_number, next_node)
+        self.string = string
+    
+    def __str__(self):
+        string = '{} string = {}{}'.format(
+                self.base_string,
+                self.string,
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+class ReadExpNode(ExpressionNode):
+    def __init__(self, kind, line_number, next_node = None):
+        ExpressionNode.__init__(self, kind, line_number, next_node)
+
+    def __str__(self):
+        return self.base_string
+
+class FunCallExpNode(ExpressionNode):
+    def __init__(self, kind, line_number, name, arguments, next_node = None):
+        ExpressionNode.__init__(self, kind, line_number, next_node)
+        self.name = name
+        self.arguments = arguments
+
+    def __str__(self):
+        string = '{} name = {}\n\tparams:{}{}'.format(
+                self.base_string,
+                self.name,
+                str_if_not_none(self.arguments),
                 str_if_not_none(self.next_node)
         )
         return string
