@@ -128,6 +128,7 @@ class Parser(object):
         return VariableNode('VAR_EXP', line_number, id_token.value)
 
     def statement_list(self):
+        """Return a linked list of statement nodes within a compound statement."""
         head = None
         if self.scanner.next_token.kind != TokenType.T_RBRACE:
             s = self.statement()
@@ -139,6 +140,7 @@ class Parser(object):
         return head
 
     def local_decs(self):
+        """Return a linked list of local declaration nodes within a compound statement."""
         head = None
         if is_type_token(self.scanner.next_token):
             l = self.declaration(local=True)
@@ -150,9 +152,20 @@ class Parser(object):
         return head
 
     def compound_statement(self):
+        """Return a single compound statement node with local declarations and statements."""
         line_number = self.scanner.line_number
         self.expect('T_LBRACE', 'Expected a left curly brace to begin the compound statement.')
         local_declarations = self.local_decs()
         statements = self.statement_list()
         self.expect('T_RBRACE', 'Expected a right curly brace to end the compound statement.')
         return CompoundStatementNode('CMPND_STATEMENT', line_number, local_declarations, statements)
+
+    def while_statement(self):
+        """Return a while statement node with a condition and a statement."""
+        line_number = self.scanner.line_number
+        self.expect('T_WHILE', 'Expected the keyword "while" to begin the while statement.')
+        self.expect('T_LPAREN', 'Expected a left parenthesis as part of the while statement.')
+        cond = self.expression()
+        self.expect('T_RPAREN', 'Expected a right parenthesis as part of the while statement.')
+        stmnt = self.statement()
+        return WhileStatementNode('WHILE_STATEMENT', line_number, cond, stmnt)

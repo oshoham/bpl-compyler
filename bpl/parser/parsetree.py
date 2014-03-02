@@ -13,6 +13,7 @@ NodeType = enum('VAR_DEC',
         'VAR_EXP',
         'EXP_STATEMENT',
         'CMPND_STATEMENT',
+        'WHILE_STATEMENT',
         'STATEMENT',
         'EXPRESSION')
 
@@ -108,6 +109,21 @@ class CompoundStatementNode(StatementNode):
         )
         return string
 
+class WhileStatementNode(StatementNode):
+    def __init__(self, kind, line_number, condition, statement, next_node = None):
+        StatementNode.__init__(self, kind, line_number, next_node)
+        self.condition = condition
+        self.statement = statement
+
+    def __str__(self):
+        string = '{}\n\tcondition: {}\n\tstatement: {}{}'.format(
+                self.base_string,
+                self.condition,
+                self.statement,
+                str_if_not_none(self.next_node)
+        )
+        return string
+
 class ExpressionNode(TreeNode):
     def __init__(self, kind, line_number, next_node = None):
         TreeNode.__init__(self, kind, line_number, next_node)
@@ -123,4 +139,21 @@ class VariableNode(ExpressionNode):
                 self.name,
                 str_if_not_none(self.next_node)
         )
+        return string
+
+class OpNode(ExpressionNode):
+    def __init__(self, kind, line_number, token, left, right, next_node = None):
+        ExpressionNode.__init__(self, kind, line_number, next_node)
+        self.token = token
+        self.left = left
+        self.right = right
+
+    def __str__(self):
+        string = '{} token = {}\n{}\n{}{}'.format(
+                self.base_string,
+                self.token.kind,
+                str(self.left),
+                str(self.right),
+                str_if_not_none(self.next_node)
+        ) 
         return string
