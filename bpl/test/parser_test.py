@@ -11,5 +11,6 @@ if __name__ == "__main__":
         print("Error: File not found!")
         exit()
     parser = Parser(input_file)
-    # test parser here
+    parse_tree = parser.parse()
+    print parse_tree
     input_file.close()

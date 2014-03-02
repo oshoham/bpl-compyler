@@ -6,11 +6,13 @@ A Parser for the BPL programming language. Implemented for CS331 at Oberlin Coll
 """
 
 from bpl.scanner.scanner import Scanner
-from bpl.scanner.token import TokenType, Token, is_type_token
+from bpl.scanner.token import TokenType, Token, is_type_token, enum
 
 NodeType = enum('VAR_DEC',
         'FUN_DEC',
         'ARRAY_DEC',
+        'VAR_EXP',
+        'EXP_STATEMENT',
         'STATEMENT',
         'EXPRESSION')
 
@@ -19,6 +21,15 @@ class TreeNode(object):
         self.kind = getattr(NodeType, kind)
         self.line_number = line_number
         self.next_node = next_node
+        self.base_string = 'Line {}: {}'.format(
+                self.line_number,
+                self.__class__.__name__
+                )
+
+    def str_plus_next_node(self, string):
+        if self.next_node is not None:
+            string += '\n{}'.format(str(next_node))
+        return string
 
 class DecNode(TreeNode):
     def __init__(self, kind, line_number, name, type_token, next_node = None):
@@ -51,6 +62,13 @@ class ExpressionStatementNode(StatementNode):
         StatementNode.__init__(self, kind, line_number, next_node)
         self.expression = expression
 
+    def __str__(self):
+        string = '{}\n{}'.format(
+                self.base_string,
+                str(self.expression)
+                )
+        return self.str_plus_next_node(string)
+
 class ExpressionNode(TreeNode):
     def __init__(self, kind, line_number, next_node = None):
         TreeNode.__init__(self, kind, line_number, next_node)
@@ -59,6 +77,13 @@ class VarExpNode(ExpressionNode):
     def __init__(self, kind, line_number, name, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.name = name
+
+    def __str__(self):
+        string = '{} id = {}'.format(
+                self.base_string,
+                self.name
+                )
+        return self.str_plus_next_node(string)
 
 class ParserException(Exception):
     def __init__(self, line_number, message):
@@ -78,6 +103,7 @@ class Parser(object):
             parse_tree = self.program()
         except ParserException as p:
             print p.message
+            exit()
         return parse_tree
 
     def program(self):
@@ -168,7 +194,7 @@ class Parser(object):
         if self.scanner.next_token.kind != TokenType.T_SEMICOLON:
             exp = self.expression()
         self.expect('T_SEMICOLON', 'Expected a semicolon to end the expression.')
-        return ExpressionStatementNode('EXP_STATEMENT', line_number, expression)
+        return ExpressionStatementNode('EXP_STATEMENT', line_number, exp)
 
     def expression(self):
         """Return a single expression node."""
