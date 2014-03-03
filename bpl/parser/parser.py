@@ -36,7 +36,7 @@ class Parser(object):
         return self.statement()
 
     def expect(self, token, message):
-        """Consume the current token, raising an error if it is not of the expected type."""
+        """Consume the current token, raising an error if it does not match the expected token."""
         current_token = self.scanner.next_token
         if current_token.kind != getattr(TokenType, token):
             raise ParserException(self.scanner.line_number, message)
@@ -210,6 +210,7 @@ class Parser(object):
         f = self.F()
         while is_mul_op(self.scanner.next_token):
             op_token = self.scanner.next_token
+            self.scanner.get_next_token()
             f1 = OpNode('MATH_EXP', line_number, op_token, None, None)
             f1.left = f
             f1.right = self.F()
@@ -251,12 +252,12 @@ class Parser(object):
         # handle number expressions
         elif self.scanner.next_token.kind == TokenType.T_NUM:
             number = self.expect('T_NUM', 'Expected a number as part of the expression.')
-            return NumExpNode('NUM_EXP', line_number, number)
+            return NumExpNode('NUM_EXP', line_number, number.value)
 
         # handle string expressions
         elif self.scanner.next_token.kind == TokenType.T_STRVAL:
             string = self.expect('T_STRVAL', 'Expected a string literal as part of the expression.')
-            return StringExpNode('STR_EXP', line_number, string)
+            return StringExpNode('STR_EXP', line_number, string.value)
 
         # handle read expressions
         elif self.scanner.next_token.kind == TokenType.T_READ:
@@ -271,7 +272,7 @@ class Parser(object):
             return DerefExpNode('DEREF_EXP', line_number, v)
 
         else:
-            id_token = self.expect('T_ID', 'Expected an identifier as part of the expression.')
+            id_token = self.expect('T_ID', 'Expected an identifier as part of the factor expression.')
 
             # handle array reference expressions
             if self.scanner.next_token.kind == TokenType.T_LBRACKET:

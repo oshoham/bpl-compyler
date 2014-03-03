@@ -1,7 +1,2 @@
-{
-    int x;
-    x;
-    y;
-    while(5 = 7)
-        y;
-}
+while(x > y)
+    x = 4*5;
