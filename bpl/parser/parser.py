@@ -6,13 +6,13 @@ A Parser for the BPL programming language. Implemented for CS331 at Oberlin Coll
 """
 
 from bpl.scanner.scanner import Scanner
-from bpl.scanner.token import TokenType, Token, is_type_token, is_relop
+from bpl.scanner.token import TokenType, Token, is_type_token, is_rel_op, is_add_op, is_mul_op
 from bpl.parser.parsetree import *
 
 
 class ParserException(Exception):
     def __init__(self, line_number, message):
-        message = 'Error on line {}: {}'.format(line_number, message)
+        message = 'Parser Error on line {}: {}'.format(line_number, message)
         Exception.__init__(self, message)
 
 class Parser(object):
@@ -171,7 +171,7 @@ class Parser(object):
         left = self.E()
         
         # handle assignment expressions
-        if self.next_token.kind == TokenType.T_ASSIGN:
+        if self.scanner.next_token.kind == TokenType.T_ASSIGN:
             # do some type checking stuff on left here to make sure it's a variable
             if not (left.kind is NodeType.VAR_EXP or left.kind is NodeType.ARRAY_EXP or
                     left.kind is NodeType.DEREF_EXP):

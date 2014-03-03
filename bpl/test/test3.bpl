@@ -2,6 +2,6 @@
     int x;
     x;
     y;
-    while(x)
+    while(5 = 7)
         y;
 }
