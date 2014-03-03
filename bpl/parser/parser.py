@@ -192,6 +192,7 @@ class Parser(object):
             return left
 
     def E(self):
+        """Return an expression node representing an addition or subtraction operation."""
         line_number = self.scanner.line_number
         t = self.T()
         while is_add_op(self.scanner.next_token):
@@ -204,6 +205,7 @@ class Parser(object):
         return t
 
     def T(self):
+        """Return an expression node representing a multiplication, division, or modulo operation."""
         line_number = self.scanner.line_number
         f = self.F()
         while is_mul_op(self.scanner.next_token):
@@ -215,6 +217,7 @@ class Parser(object):
         return f
 
     def F(self):
+        """Return an expression node representing a negative, address, or dereference operation."""
         line_number = self.scanner.line_number
         if self.scanner.next_token == TokenType.T_MINUS:
             self.scanner.get_next_token()
@@ -235,6 +238,7 @@ class Parser(object):
             return self.factor()
 
     def factor(self):
+        """Return a factor, which may be one of many types of expressions."""
         line_number = self.scanner.line_number
 
         # handle parenthesized expressions
@@ -288,12 +292,14 @@ class Parser(object):
                 return VarExpNode('VAR_EXP', line_number, id_token.value)
 
     def args(self):
+        """Return a linked list of function arguments, each of which is an expression."""
         head = None
         if self.scanner.next_token.kind != TokenType.T_RPAREN:
-            arg = self.expression()
-            head = arg
-            if self.scanner.next_token.kind == TokenType.T_COMMA:
-                # consume comma
+            a = self.expression()
+            head = a
             while self.scanner.next_token.kind != TokenType.T_RPAREN:
-                arg1 = 
+                self.expect('T_COMMA', 'Expected a comma between each function argument.')
+                a1 = self.expression()
+                a.next_node = a1
+                a = a1
         return head
