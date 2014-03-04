@@ -154,6 +154,13 @@ class Parser(object):
         self.expect('T_RBRACE', 'Expected a right curly brace to end the compound statement.')
         return CompoundStatementNode('CMPND_STATEMENT', line_number, local_declarations, statements)
 
+    def if_statement(self):
+        """Return an if statement node with a condition, statement, and optional else statement."""
+        line_number = self.scanner.line_number
+        self.expect('T_IF', 'Expected the keyword "if" to begin the if statement.')
+        self.expect('T_LPAREN', 'Expected a left parenthesis as part of the if statement.')
+        cond = self.expression()
+
     def while_statement(self):
         """Return a while statement node with a condition and a statement."""
         line_number = self.scanner.line_number
@@ -163,6 +170,16 @@ class Parser(object):
         self.expect('T_RPAREN', 'Expected a right parenthesis as part of the while statement.')
         stmnt = self.statement()
         return WhileStatementNode('WHILE_STATEMENT', line_number, cond, stmnt)
+
+    def return_statement(self):
+        """Return a return statement node, either with or without an expression."""
+        line_number = self.scanner.line_number
+        self.expect('T_RETURN', 'Expected the keyword "return" to begin the return statement.')
+        exp = None
+        if self.scanner.next_token.kind != TokenType.T_SEMICOLON:
+            exp = self.expression()
+        self.expect('T_SEMICOLON', 'Expected a semicolon to end the return statement.')
+        return ReturnStatementNode('RETURN_STATEMENT', line_number, exp)
 
     def expression(self):
         """Return a single expression node."""
@@ -220,7 +237,7 @@ class Parser(object):
     def F(self):
         """Return an expression node representing a negative, address, or dereference operation."""
         line_number = self.scanner.line_number
-        if self.scanner.next_token == TokenType.T_MINUS:
+        if self.scanner.next_token.kind == TokenType.T_MINUS:
             self.scanner.get_next_token()
             f = self.F()
             return NegExpNode('NEG_EXP', line_number, f)
@@ -272,7 +289,7 @@ class Parser(object):
             return DerefExpNode('DEREF_EXP', line_number, v)
 
         else:
-            id_token = self.expect('T_ID', 'Expected an identifier as part of the factor expression.')
+            id_token = self.expect('T_ID', 'Expected an identifier as part of the expression.')
 
             # handle array reference expressions
             if self.scanner.next_token.kind == TokenType.T_LBRACKET:

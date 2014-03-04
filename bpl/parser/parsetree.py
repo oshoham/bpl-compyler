@@ -13,6 +13,7 @@ NodeType = enum('VAR_DEC',
         'EXP_STATEMENT',
         'CMPND_STATEMENT',
         'WHILE_STATEMENT',
+        'RETURN_STATEMENT',
         'VAR_EXP',
         'ASSIGN_EXP',
         'COMP_EXP',
@@ -36,7 +37,6 @@ class TreeNode(object):
                 self.line_number,
                 self.__class__.__name__
         )
-
 
 class DecNode(TreeNode):
     def __init__(self, kind, line_number, name, type_token, next_node = None):
@@ -123,6 +123,36 @@ class WhileStatementNode(StatementNode):
                 self.base_string,
                 self.condition,
                 self.statement,
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+class ReturnStatementNode(StatementNode):
+    def __init__(self, kind, line_number, expression, next_node = None):
+        StatementNode.__init__(self, kind, line_number, next_node)
+        self.expression = expression
+
+    def __str__(self):
+        string = '{}\n\texpression: {}{}'.format(
+                self.base_string,
+                str(self.expression),
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+def IfStatementNode(StatementNode):
+    def __init__(self, kind, line_number, condition, statement, else_statement, next_node = None):
+        StatementNode.__init__(self, kind, line_number, next_node)
+        self.condition = condition
+        self.statement = statement
+        self.else_statement = else_statement
+
+    def __str__(self):
+        string = '{}\n\tcondition: {}\n\tstatement: {}\n\telse_statement: {}{}'.format(
+                self.base_string,
+                str(self.condition),
+                str(self.statement),
+                str_if_not_none(self.else_statement),
                 str_if_not_none(self.next_node)
         )
         return string

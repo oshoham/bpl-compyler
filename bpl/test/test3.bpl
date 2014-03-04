@@ -1,2 +1,4 @@
-while(x > y)
-    x = 4*5;
+while (x > y) {
+    y = f(a);
+    x = 4*-5+x-y;
+}
