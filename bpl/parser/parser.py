@@ -106,9 +106,12 @@ class Parser(object):
             return self.while_statement()
         elif self.scanner.next_token.kind == TokenType.T_RETURN:
             return self.return_statement()
-        elif self.scanner.next_token.kind == TokenType.T_WRITE or \
-                self.scanner.next_token.kind == TokenType.T_WRITELN:
+        elif self.scanner.next_token.kind == TokenType.T_WRITE:
             return self.write_statement()
+        elif self.scanner.next_token.kind == TokenType.T_WRITELN:
+            return self.writeln_statement()
+        elif self.scanner.next_token.kind == TokenType.T_READ:
+            return self.read_statement()
         else:
             return self.expression_statement()
 
@@ -146,6 +149,17 @@ class Parser(object):
                 l1 = self.declaration(local=True)
                 l.next_node = l1
                 l = l1
+        return head
+
+    def params(self):
+        head = None
+        if self.scanner.next_token.kind != TokenType.T_VOID:
+            if not is_type_token(self.scanner.next_token):
+                raise ParserException(self.scanner.line_number, 'Expected a type keyword as part of the function parameter.')
+            while is_type_token(self.scanner.next_token):
+      
+                id_token = self.expect('T_ID', 'Expected an identifier as part of the function parameter.')
+
         return head
 
     def compound_statement(self):
@@ -190,6 +204,34 @@ class Parser(object):
             exp = self.expression()
         self.expect('T_SEMICOLON', 'Expected a semicolon to end the return statement.')
         return ReturnStatementNode('RETURN_STATEMENT', line_number, exp)
+
+    def write_statement(self):
+        """Return a write statement node with an expression to be written."""
+        line_number = self.scanner.line_number
+        self.expect('T_WRITE', 'Expected the keyword "write" to begin the write statement.')
+        self.expect('T_LPAREN', 'Expected a left parenthesis as part of the write statement.')
+        exp = self.expression()
+        self.expect('T_RPAREN', 'Expected a right parenthesis as part of the write statement.')
+        self.expect('T_SEMICOLON', 'Expected a semicolon to end the write statement.')
+        return WriteStatementNode('WRITE_STATEMENT', line_number, exp)
+
+    def writeln_statement(self):
+        """Return a writeln statement node."""
+        line_number = self.scanner.line_number
+        self.expect('T_WRITELN', 'Expected the keyword "writeln" to begin the writeln statement.')
+        self.expect('T_LPAREN', 'Expected a left parenthesis as part of the writeln statement.')
+        self.expect('T_RPAREN', 'Expected a right parenthesis as part of the writeln statement.')
+        self.expect('T_SEMICOLON', 'Expected a semicolon to end the writeln statement.')
+        return WritelnStatementNode('WRITELN_STATEMENT', line_number)
+
+    def read_statement(self):
+        """Return a read statement node."""
+        line_number = self.scanner.line_number
+        self.expect('T_READ', 'Expected the keyword "read" to begin the writeln statement.')
+        self.expect('T_LPAREN', 'Expected a left parenthesis as part of the read statement.')
+        self.expect('T_RPAREN', 'Expected a right parenthesis as part of the read statement.')
+        self.expect('T_SEMICOLON', 'Expected a semicolon to end the read statement.')
+        return ReadStatementNode('READ_STATEMENT', line_number)
 
     def expression(self):
         """Return a single expression node."""

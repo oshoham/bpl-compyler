@@ -15,6 +15,9 @@ NodeType = enum('VAR_DEC',
         'WHILE_STATEMENT',
         'RETURN_STATEMENT',
         'IF_STATEMENT',
+        'WRITE_STATEMENT',
+        'WRITELN_STATEMENT',
+        'READ_STATEMENT',
         'VAR_EXP',
         'ASSIGN_EXP',
         'COMP_EXP',
@@ -154,6 +157,41 @@ class IfStatementNode(StatementNode):
                 str(self.condition),
                 str(self.statement),
                 str(self.else_statement),
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+class WriteStatementNode(StatementNode):
+    def __init__(self, kind, line_number, expression, next_node = None):
+        StatementNode.__init__(self, kind, line_number, next_node)
+        self.expression = expression
+
+    def __str__(self):
+        string = '{}\n\texpression: {}{}'.format(
+                self.base_string,
+                str(self.expression),
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+class WritelnStatementNode(StatementNode):
+    def __init__(self, kind, line_number, next_node = None):
+        StatementNode.__init__(self, kind, line_number, next_node)
+
+    def __str__(self):
+        string = '{}{}'.format(
+                self.base_string,
+                str_if_not_none(self.next_node)
+        )
+        return string
+
+class ReadStatementNode(StatementNode):
+    def __init__(self, kind, line_number, next_node = None):
+        StatementNode.__init__(self, kind, line_number, next_node)
+
+    def __str__(self):
+        string = '{}{}'.format(
+                self.base_string,
                 str_if_not_none(self.next_node)
         )
         return string
