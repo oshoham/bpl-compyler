@@ -14,6 +14,7 @@ NodeType = enum('VAR_DEC',
         'CMPND_STATEMENT',
         'WHILE_STATEMENT',
         'RETURN_STATEMENT',
+        'IF_STATEMENT',
         'VAR_EXP',
         'ASSIGN_EXP',
         'COMP_EXP',
@@ -140,7 +141,7 @@ class ReturnStatementNode(StatementNode):
         )
         return string
 
-def IfStatementNode(StatementNode):
+class IfStatementNode(StatementNode):
     def __init__(self, kind, line_number, condition, statement, else_statement, next_node = None):
         StatementNode.__init__(self, kind, line_number, next_node)
         self.condition = condition
@@ -152,7 +153,7 @@ def IfStatementNode(StatementNode):
                 self.base_string,
                 str(self.condition),
                 str(self.statement),
-                str_if_not_none(self.else_statement),
+                str(self.else_statement),
                 str_if_not_none(self.next_node)
         )
         return string

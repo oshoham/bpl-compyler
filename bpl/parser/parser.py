@@ -123,11 +123,14 @@ class Parser(object):
 
     def statement_list(self):
         """Return a linked list of statement nodes within a compound statement."""
+        line_number = self.scanner.line_number
         head = None
         if self.scanner.next_token.kind != TokenType.T_RBRACE:
             s = self.statement()
             head = s
             while self.scanner.next_token.kind != TokenType.T_RBRACE:
+                if self.scanner.next_token.kind == TokenType.T_EOF:
+                    raise ParserException(line_number, 'Expected a right curly brace to close the compound statement.')
                 s1 = self.statement()
                 s.next_node = s1
                 s = s1
@@ -160,6 +163,13 @@ class Parser(object):
         self.expect('T_IF', 'Expected the keyword "if" to begin the if statement.')
         self.expect('T_LPAREN', 'Expected a left parenthesis as part of the if statement.')
         cond = self.expression()
+        self.expect('T_RPAREN', 'Expected a right parenthesis as part of the if statement.')
+        stmnt = self.statement()
+        else_stmnt = None
+        if self.scanner.next_token.kind == TokenType.T_ELSE:
+            self.scanner.get_next_token()
+            else_stmnt = self.statement()
+        return IfStatementNode('IF_STATEMENT', line_number, cond, stmnt, else_stmnt)
 
     def while_statement(self):
         """Return a while statement node with a condition and a statement."""
