@@ -112,8 +112,6 @@ class Parser(object):
             return self.write_statement()
         elif self.scanner.next_token.kind == TokenType.T_WRITELN:
             return self.writeln_statement()
-        elif self.scanner.next_token.kind == TokenType.T_READ:
-            return self.read_statement()
         else:
             return self.expression_statement()
 

@@ -17,7 +17,6 @@ NodeType = enum('VAR_DEC',
         'IF_STATEMENT',
         'WRITE_STATEMENT',
         'WRITELN_STATEMENT',
-        'READ_STATEMENT',
         'VAR_EXP',
         'ASSIGN_EXP',
         'COMP_EXP',
@@ -33,6 +32,7 @@ NodeType = enum('VAR_DEC',
 )
 
 class TreeNode(object):
+    """Base class for parse tree nodes. Inherited by more specific subclasses of nodes."""
     def __init__(self, kind, line_number, next_node=None):
         self.kind = getattr(NodeType, kind)
         self.line_number = line_number
@@ -43,19 +43,22 @@ class TreeNode(object):
         )
 
 class DecNode(TreeNode):
+    """Base class for declaration nodes. Inherited by VarDecNode, FunDecNode, and ArrayDecNode."""
     def __init__(self, kind, line_number, name, type_token, next_node = None):
         TreeNode.__init__(self, kind, line_number, next_node)
         self.name = name
         self.type_token = type_token
 
 class VarDecNode(DecNode):
+    """Represents a variable declaration."""
     def __init__(self, kind, line_number, name, type_token, is_pointer = False, next_node = None):
         DecNode.__init__(self, kind, line_number, name, type_token, next_node)
         self.is_pointer = is_pointer
 
     def __str__(self):
-        string = '{} id = {} type = {}{}'.format(
+        string = '{}{} id = {} type = {}{}'.format(
                 self.base_string,
+                ' (pointer)' if self.is_pointer else '',
                 self.name,
                 self.type_token.kind,
                 str_if_not_none(self.next_node)
@@ -63,26 +66,40 @@ class VarDecNode(DecNode):
         return string
 
 class FunDecNode(DecNode):
+    """Represents a function declaration."""
     def __init__(self, kind, line_number, name, type_token, params, body, next_node = None):
         DecNode.__init__(self, kind, line_number, name, type_token, next_node)
         self.params = params
         self.body = body
 
     def __str__(self):
-        string = '{} id = {} return type = {}\n\tparams: {}\n\tbody: {}{}'.format(
+        string = '{} id = {} return type = {}\nParams:\n{}{}Body:\n{}{}'.format(
                 self.base_string,
                 self.name,
                 self.type_token.kind,
-                str(self.params),
-                str(self.body),
+                indent(self.params),
+                '\n' if self.params is not None else '',
+                indent(self.body),
                 str_if_not_none(self.next_node)
         )
         return string
 
 class ArrayDecNode(VarDecNode):
+    """Represents an array declaration."""
     def __init__(self, kind, line_number, name, type_token, size, is_pointer = False, next_node = None):
         VarDecNode.__init__(self, kind, line_number, name, type_token, is_pointer, next_node)
         self.size = size
+
+    def __str__(self):
+        string = '{}{} id = {} type = {} size = {}{}'.format(
+                self.base_string,
+                ' (pointer)' if self.is_pointer else '',
+                self.name,
+                self.type_token.kind,
+                str(self.size),
+                str_if_not_none(self.next_node)
+        )
+        return string
 
 class StatementNode(TreeNode):
     def __init__(self, kind, line_number, next_node = None):
@@ -94,9 +111,9 @@ class ExpressionStatementNode(StatementNode):
         self.expression = expression
 
     def __str__(self):
-        string = '{}\n{}{}'.format(
+        string = '{}\nExpression:\n{}{}'.format(
                 self.base_string,
-                str(self.expression),
+                indent(self.expression),
                 str_if_not_none(self.next_node)
         )
         return string
@@ -108,10 +125,11 @@ class CompoundStatementNode(StatementNode):
         self.statements = statements
 
     def __str__(self):
-        string = '{}{}{}{}'.format(
+        string = '{}\nLocal Declarations:\n{}{}Statements:\n{}{}'.format(
                 self.base_string,
-                str_if_not_none(self.local_declarations),
-                str_if_not_none(self.statements),
+                indent(self.local_declarations),
+                '\n' if self.local_declarations is not None else '',
+                indent(self.statements),
                 str_if_not_none(self.next_node)
         )
         return string
@@ -123,10 +141,10 @@ class WhileStatementNode(StatementNode):
         self.statement = statement
 
     def __str__(self):
-        string = '{}\n\tcondition: {}\n\tstatement: {}{}'.format(
+        string = '{}\nCondition:\n{}\nStatement:\n{}{}'.format(
                 self.base_string,
-                self.condition,
-                self.statement,
+                indent(self.condition),
+                indent(self.statement),
                 str_if_not_none(self.next_node)
         )
         return string
@@ -137,9 +155,10 @@ class ReturnStatementNode(StatementNode):
         self.expression = expression
 
     def __str__(self):
-        string = '{}\n\texpression: {}{}'.format(
+        string = '{}{}{}{}'.format(
                 self.base_string,
-                str(self.expression),
+                '\nExpression:\n' if self.expression is not None else '',
+                indent(self.expression),
                 str_if_not_none(self.next_node)
         )
         return string
@@ -152,11 +171,12 @@ class IfStatementNode(StatementNode):
         self.else_statement = else_statement
 
     def __str__(self):
-        string = '{}\n\tcondition: {}\n\tstatement: {}\n\telse_statement: {}{}'.format(
+        string = '{}\nCondition:\n{}\nStatement:\n{}{}{}{}'.format(
                 self.base_string,
-                str(self.condition),
-                str(self.statement),
-                str(self.else_statement),
+                indent(self.condition),
+                indent(self.statement),
+                '\nElse Statement:\n' if self.else_statement is not None else '',
+                indent(self.else_statement),
                 str_if_not_none(self.next_node)
         )
         return string
@@ -167,25 +187,14 @@ class WriteStatementNode(StatementNode):
         self.expression = expression
 
     def __str__(self):
-        string = '{}\n\texpression: {}{}'.format(
+        string = '{}\nExpression:\n{}{}'.format(
                 self.base_string,
-                str(self.expression),
+                indent(self.expression),
                 str_if_not_none(self.next_node)
         )
         return string
 
 class WritelnStatementNode(StatementNode):
-    def __init__(self, kind, line_number, next_node = None):
-        StatementNode.__init__(self, kind, line_number, next_node)
-
-    def __str__(self):
-        string = '{}{}'.format(
-                self.base_string,
-                str_if_not_none(self.next_node)
-        )
-        return string
-
-class ReadStatementNode(StatementNode):
     def __init__(self, kind, line_number, next_node = None):
         StatementNode.__init__(self, kind, line_number, next_node)
 
@@ -221,11 +230,12 @@ class OpNode(ExpressionNode):
         self.right = right
 
     def __str__(self):
-        string = '{} token = {}\n{}\n{}{}'.format(
+        string = '{} token = {} ({})\nLeft:\n{}\nRight:\n{}{}'.format(
                 self.base_string,
                 self.token.kind,
-                str(self.left),
-                str(self.right),
+                TokenType.names[self.token.kind],
+                indent(self.left),
+                indent(self.right),
                 str_if_not_none(self.next_node)
         ) 
         return string
@@ -332,8 +342,16 @@ class FunCallExpNode(ExpressionNode):
         return string
 
 def str_if_not_none(x):
-    """Return str(x) if x is not None. Otherwise, return the empty string."""
+    """Return str(x) if x is not None. Otherwise, return an empty string."""
     string = ''
     if x is not None:
         string += '\n{}'.format(str(x))
     return string
+
+def indent(s):
+    indented_string = ''
+    if s is None:
+        return indented_string
+    for line in str(s).splitlines():
+        indented_string += '| {}\n'.format(line)
+    return indented_string[:-1]
