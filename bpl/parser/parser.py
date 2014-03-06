@@ -33,7 +33,7 @@ class Parser(object):
 
     def program(self):
         """Return a complete parse tree."""
-        return self.statement()
+        return self.declaration_list()
 
     def expect(self, token, message):
         """Consume the current token, raising an error if it does not match the expected token."""
@@ -75,6 +75,8 @@ class Parser(object):
 
         # handle array declarations
         elif self.scanner.next_token.kind == TokenType.T_LBRACKET:
+            if is_pointer:
+                raise ParserException(line_number, 'Cannot declare a pointer to an array.')
             self.scanner.get_next_token()
             size = int(self.expect('T_NUM', 'Expected an integer size as part of the array declaration.').value)
             self.expect('T_RBRACKET', 'Expected a right bracket as part of the array declaration.')
@@ -88,10 +90,10 @@ class Parser(object):
             if local:
                 raise ParserException(line_number, 'Cannot declare a function inside a compound statement.')
             self.scanner.get_next_token()
-            parameters = self.params()
+            parameters = self.param_list()
             self.expect('T_RPAREN', 'Expected a right parenthesis to end the function parameter declarations.')
             body = self.compound_statement()
-            return FunDecNode('FUN_DEC', line_number, id_token.value, type_token, params, body)
+            return FunDecNode('FUN_DEC', line_number, id_token.value, type_token, parameters, body)
 
         else:
             raise ParserException(line_number, 'Unexpected token in declaration.')
@@ -151,16 +153,41 @@ class Parser(object):
                 l = l1
         return head
 
-    def params(self):
+    def param_list(self):
+        """Return a linked list of function parameters, or None if the only parameter is the keyword 'void'."""
         head = None
-        if self.scanner.next_token.kind != TokenType.T_VOID:
-            if not is_type_token(self.scanner.next_token):
-                raise ParserException(self.scanner.line_number, 'Expected a type keyword as part of the function parameter.')
-            while is_type_token(self.scanner.next_token):
-      
-                id_token = self.expect('T_ID', 'Expected an identifier as part of the function parameter.')
-
+        if self.scanner.next_token.kind == TokenType.T_VOID:
+            self.scanner.get_next_token()
+        else:
+            p = self.param()
+            head = p
+            while self.scanner.next_token.kind == TokenType.T_COMMA:
+                self.expect('T_COMMA', 'Expected a comma between each function parameter.')
+                p1 = self.param()
+                p.next_node = p1
+                p = p1
         return head
+
+    def param(self):
+        """Return a single function parameter node, which may be a variable, pointer, or array declaration."""
+        line_number = self.scanner.line_number
+        if not is_type_token(self.scanner.next_token):
+            raise ParserException(self.scanner.line_number, 'Expected a type keyword as part of the function parameter.')
+        type_token = self.scanner.next_token
+        self.scanner.get_next_token()
+        is_pointer = False
+        if self.scanner.next_token.kind == TokenType.T_MULT:
+            is_pointer = True
+            self.scanner.get_next_token()
+        id_token = self.expect('T_ID', 'Expected an identifier as part of the function parameter.')
+        if self.scanner.next_token.kind == TokenType.T_LBRACKET:
+            if is_pointer:
+                raise ParserException(line_number, 'Cannot pass a pointer to an array as a parameter.')
+            self.scanner.get_next_token()
+            self.expect('T_RBRACKET', 'Expected a right bracket as part of the array parameter.')
+            return ArrayDecNode('ARRAY_DEC', line_number, id_token.value, type_token, -1, is_pointer)
+        else:
+            return VarDecNode('VAR_DEC', line_number, id_token.value, type_token, is_pointer)
 
     def compound_statement(self):
         """Return a single compound statement node with local declarations and statements."""

@@ -9,6 +9,11 @@ programming language. Implemented for CS331 at Oberlin College.
 # Hacking together an Enum data type
 def enum(*sequential, **named):
     enums = dict(zip(sequential, range(len(sequential))), **named)
+    enums['names'] = {
+            value: key for key, value in enums.iteritems()
+            if not key.startswith('__')
+            and not key.endswith('__')
+    }
     return type('Enum', (), enums)
 
 # An "Enum" that maps Token types onto integers.
