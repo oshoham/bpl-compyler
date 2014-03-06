@@ -43,7 +43,7 @@ class TreeNode(object):
         )
 
 class DecNode(TreeNode):
-    """Base class for declaration nodes. Inherited by VarDecNode, FunDecNode, and ArrayDecNode."""
+    """Base class for declaration nodes. Inherited by variable, function, and array declaration nodes."""
     def __init__(self, kind, line_number, name, type_token, next_node = None):
         TreeNode.__init__(self, kind, line_number, next_node)
         self.name = name
@@ -102,10 +102,12 @@ class ArrayDecNode(VarDecNode):
         return string
 
 class StatementNode(TreeNode):
+    """Base class for statement nodes. Inherited by compound, while, if, write, writeln, return, and expression statement nodes."""
     def __init__(self, kind, line_number, next_node = None):
         TreeNode.__init__(self, kind, line_number, next_node)
 
 class ExpressionStatementNode(StatementNode):
+    """Represents an expression statement, which can essentially be any type of expression."""
     def __init__(self, kind, line_number, expression, next_node = None):
         StatementNode.__init__(self, kind, line_number, next_node)
         self.expression = expression
@@ -119,6 +121,7 @@ class ExpressionStatementNode(StatementNode):
         return string
 
 class CompoundStatementNode(StatementNode):
+    """Represents a compound statement, which contains local declarations followed by more statements, all inside curly braces."""
     def __init__(self, kind, line_number, local_declarations, statements, next_node = None):
         StatementNode.__init__(self, kind, line_number, next_node)
         self.local_declarations = local_declarations
@@ -135,6 +138,7 @@ class CompoundStatementNode(StatementNode):
         return string
 
 class WhileStatementNode(StatementNode):
+    """Reprsents a while statement with a condition and a statement to executed."""
     def __init__(self, kind, line_number, condition, statement, next_node = None):
         StatementNode.__init__(self, kind, line_number, next_node)
         self.condition = condition
@@ -150,6 +154,7 @@ class WhileStatementNode(StatementNode):
         return string
 
 class ReturnStatementNode(StatementNode):
+    """Represents a return statement with an optional expression to be returned."""
     def __init__(self, kind, line_number, expression, next_node = None):
         StatementNode.__init__(self, kind, line_number, next_node)
         self.expression = expression
@@ -164,6 +169,7 @@ class ReturnStatementNode(StatementNode):
         return string
 
 class IfStatementNode(StatementNode):
+    """Represents an if statement with a condition, a statement to executed, and an optional else statement."""
     def __init__(self, kind, line_number, condition, statement, else_statement, next_node = None):
         StatementNode.__init__(self, kind, line_number, next_node)
         self.condition = condition
@@ -182,6 +188,7 @@ class IfStatementNode(StatementNode):
         return string
 
 class WriteStatementNode(StatementNode):
+    """Represents a write statement with an expression to be written."""
     def __init__(self, kind, line_number, expression, next_node = None):
         StatementNode.__init__(self, kind, line_number, next_node)
         self.expression = expression
@@ -195,6 +202,7 @@ class WriteStatementNode(StatementNode):
         return string
 
 class WritelnStatementNode(StatementNode):
+    """Represents a writeln statement."""
     def __init__(self, kind, line_number, next_node = None):
         StatementNode.__init__(self, kind, line_number, next_node)
 
@@ -206,10 +214,13 @@ class WritelnStatementNode(StatementNode):
         return string
 
 class ExpressionNode(TreeNode):
+    """Base class for expression nodes. Inherited by variable, operation, array, dereference, address, \
+            negative, number, string, read, and function call expression nodes."""
     def __init__(self, kind, line_number, next_node = None):
         TreeNode.__init__(self, kind, line_number, next_node)
 
 class VarExpNode(ExpressionNode):
+    """Represents a variable."""
     def __init__(self, kind, line_number, name, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.name = name
@@ -223,6 +234,8 @@ class VarExpNode(ExpressionNode):
         return string
 
 class OpNode(ExpressionNode):
+    """Represents an infix operation, which can be any one of addition, subtraction, multiplication, \
+            division, assignment, or modulo."""
     def __init__(self, kind, line_number, token, left, right, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.token = token
@@ -241,59 +254,64 @@ class OpNode(ExpressionNode):
         return string
 
 class ArrayExpNode(VarExpNode):
+    """Represents an array indexing expression, e.g. arr[x+1]."""
     def __init__(self, kind, line_number, name, expression, next_node = None):
         VarExpNode.__init__(self, kind, line_number, name, next_node)
         self.expression = expression
 
     def __str__(self):
-        string = '{} id = {}\n\texpression: {}{}'.format(
+        string = '{} id = {}\nIndex Expression:\n{}{}'.format(
                 self.base_string,
                 self.name,
-                str(self.expression),
+                indent(self.expression),
                 str_if_not_none(self.next_node)
         )
         return string
 
 class DerefExpNode(ExpressionNode):
+    """Represents a pointer dereference, e.g. *x."""
     def __init__(self, kind, line_number, expression, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.expression = expression
 
     def __str__(self):
-        string = '{}\n\texpression: {}{}'.format(
+        string = '{}\nPointer Expression:\n{}{}'.format(
                 self.base_string,
-                str(self.expression),
+                indent(self.expression),
                 str_if_not_none(self.next_node)
         )
         return string
 
 class AddressExpNode(ExpressionNode):
+    """Represents a memory address reference, e.g. &x."""
     def __init__(self, kind, line_number, expression, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.expression = expression
 
     def __str__(self):
-        string = '{}\n\texpression: {}{}'.format(
+        string = '{}\nReference Expression:\n{}{}'.format(
                 self.base_string,
-                str(self.expression),
+                indent(self.expression),
                 str_if_not_none(self.next_node)
         )
         return string
 
 class NegExpNode(ExpressionNode):
+    """Represents applying the negative operator to a value, e.g -x."""
     def __init__(self, kind, line_number, expression, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.expression = expression
 
     def __str__(self):
-        string = '{}\n\texpression: {}{}'.format(
+        string = '{}\nNegated Expression:\n{}{}'.format(
                 self.base_string,
-                str(self.expression),
+                indent(self.expression),
                 str_if_not_none(self.next_node)
         )
         return string
 
 class NumExpNode(ExpressionNode):
+    """Represents an integer."""
     def __init__(self, kind, line_number, number, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.number = number
@@ -307,6 +325,7 @@ class NumExpNode(ExpressionNode):
         return string
 
 class StringExpNode(ExpressionNode):
+    """Represents a string."""
     def __init__(self, kind, line_number, string, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.string = string
@@ -320,35 +339,43 @@ class StringExpNode(ExpressionNode):
         return string
 
 class ReadExpNode(ExpressionNode):
+    """Represents a read operation."""
     def __init__(self, kind, line_number, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
 
     def __str__(self):
-        return self.base_string
+        string = '{}{}'.format(
+                self.base_string,
+                str_if_not_none(self.next_node)
+        )
+        return string
 
 class FunCallExpNode(ExpressionNode):
+    """Represents a function call, e.g. f(x)."""
     def __init__(self, kind, line_number, name, arguments, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.name = name
         self.arguments = arguments
 
     def __str__(self):
-        string = '{} name = {}\n\tparams:{}{}'.format(
+        string = '{} name = {}{}{}{}'.format(
                 self.base_string,
                 self.name,
-                str_if_not_none(self.arguments),
+                '\nArguments:\n' if self.arguments is not None else '',
+                indent(self.arguments),
                 str_if_not_none(self.next_node)
         )
         return string
 
 def str_if_not_none(x):
-    """Return str(x) if x is not None. Otherwise, return an empty string."""
+    """Return str(x) with a preceding newline if x is not None. Otherwise, return an empty string."""
     string = ''
     if x is not None:
         string += '\n{}'.format(str(x))
     return string
 
 def indent(s):
+    """Return each line of s indented with a preceding '| ' if s is not None. Otherwise, return an emptry string."""
     indented_string = ''
     if s is None:
         return indented_string
