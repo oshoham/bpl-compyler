@@ -41,6 +41,8 @@ class TreeNode(object):
                 self.line_number,
                 self.__class__.__name__
         )
+        
+# Declaration Nodes
 
 class DecNode(TreeNode):
     """Base class for declaration nodes. Inherited by variable, function, and array declaration nodes."""
@@ -100,6 +102,8 @@ class ArrayDecNode(VarDecNode):
                 str_if_not_none(self.next_node)
         )
         return string
+
+# Statement Nodes
 
 class StatementNode(TreeNode):
     """Base class for statement nodes. Inherited by compound, while, if, write, writeln, return, and expression statement nodes."""
@@ -212,6 +216,8 @@ class WritelnStatementNode(StatementNode):
                 str_if_not_none(self.next_node)
         )
         return string
+
+# Expression Nodes
 
 class ExpressionNode(TreeNode):
     """Base class for expression nodes. Inherited by variable, operation, array, dereference, address, \
@@ -366,6 +372,8 @@ class FunCallExpNode(ExpressionNode):
                 str_if_not_none(self.next_node)
         )
         return string
+
+# Helper Functions
 
 def str_if_not_none(x):
     """Return str(x) with a preceding newline if x is not None. Otherwise, return an empty string."""
