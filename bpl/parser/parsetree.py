@@ -58,11 +58,12 @@ class VarDecNode(DecNode):
         self.is_pointer = is_pointer
 
     def __str__(self):
-        string = '{}{} id = {} type = {}{}'.format(
+        string = '{}{} id = {} type = {} ({}){}'.format(
                 self.base_string,
                 ' (pointer)' if self.is_pointer else '',
                 self.name,
                 self.type_token.kind,
+                TokenType.names[self.type_token.kind],
                 str_if_not_none(self.next_node)
         )
         return string
@@ -75,10 +76,11 @@ class FunDecNode(DecNode):
         self.body = body
 
     def __str__(self):
-        string = '{} id = {} return type = {}\nParams:\n{}{}Body:\n{}{}'.format(
+        string = '{} id = {} return type = {} ({})\nParams:\n{}{}Body:\n{}{}'.format(
                 self.base_string,
                 self.name,
                 self.type_token.kind,
+                TokenType.names[self.type_token.kind],
                 indent(self.params),
                 '\n' if self.params is not None else '',
                 indent(self.body),
@@ -93,11 +95,12 @@ class ArrayDecNode(VarDecNode):
         self.size = size
 
     def __str__(self):
-        string = '{}{} id = {} type = {} size = {}{}'.format(
+        string = '{}{} id = {} type = {} ({}) size = {}{}'.format(
                 self.base_string,
                 ' (pointer)' if self.is_pointer else '',
                 self.name,
                 self.type_token.kind,
+                TokenType.names[self.type_token.kind],
                 str(self.size),
                 str_if_not_none(self.next_node)
         )
