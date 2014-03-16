@@ -7,7 +7,7 @@ int f(int a) {
 void b( int x ) { 
     write( x ); 
 } 
- 
+
 void main(void) { 
     int x; 
     x = 1; 
