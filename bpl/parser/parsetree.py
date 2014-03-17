@@ -233,6 +233,7 @@ class VarExpNode(ExpressionNode):
     def __init__(self, kind, line_number, name, next_node = None):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.name = name
+        self.declaration = None
 
     def __str__(self):
         string = '{} id = {}{}'.format(
@@ -365,6 +366,7 @@ class FunCallExpNode(ExpressionNode):
         ExpressionNode.__init__(self, kind, line_number, next_node)
         self.name = name
         self.arguments = arguments
+        self.declaration = None
 
     def __str__(self):
         string = '{} name = {}{}{}{}'.format(
