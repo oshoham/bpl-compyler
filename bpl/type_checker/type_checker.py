@@ -118,3 +118,16 @@ class TypeChecker(object):
             while arg is not None
                 self.find_references_expression(arg)
                 arg = arg.next_node
+        
+        elif expression.kind in (NodeType.ASSIGN_EXP, NodeType.COMP_EXP, NodeType.MATH_EXP):
+            self.find_references_expression(expression.left)
+            self.find_references_expression(expression.right)
+
+        elif expression.kind in (NodeType.ADDRESS_EXP, NodeType.DEREF_EXP, NodeType.NEG_EXP):
+            self.find_references_expression(expression.expression) # again, regretting my chosen variable names
+        
+        elif expression.kind in (NodeType.NUM_EXP, NodeType.NodeType.STR_EXP, NodeType.READ_EXP):
+            pass
+
+        else:
+            raise TypeCheckerException(statement.line_number, 'Expression node is not a valid type of expression.')
