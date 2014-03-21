@@ -10,7 +10,7 @@ if __name__ == "__main__":
         input_file = open(file_name)
     except IOError:
         print("Error: File not found!")
-        exit()
+        sys.exit()
     scanner = Scanner(input_file)
     scanner.get_next_token()
     while(scanner.next_token.kind != TokenType.T_EOF):

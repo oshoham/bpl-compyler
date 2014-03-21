@@ -9,7 +9,7 @@ if __name__ == "__main__":
         input_file = open(file_name)
     except IOError:
         print("Error: File not found!")
-        exit()
+        sys.exit()
     parser = Parser(input_file)
     parse_tree = parser.parse()
     print parse_tree
