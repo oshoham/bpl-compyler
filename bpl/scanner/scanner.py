@@ -7,6 +7,11 @@ A lexical scanner for the BPL programming language. Implemented for CS331 at Obe
 
 from bpl.scanner.token import TokenType, Token
 
+class ScannerException(Exception):
+    def __init__(self, line_number, index, message):
+        message = 'Scanner Error on line {}, index {}: {}'.format(line_number, index, message)
+        Exception.__init__(self, message)
+
 # The Scanner performs a lexical analysis of a BPL file. It keeps track of
 # its current position in the file, and uses the variable next_token and the method 
 # get_next_token() to step through the file, one Token at a time.
@@ -141,8 +146,8 @@ class Scanner(object):
                 if(self.current_line[j] == '='):
                     self.next_token = Token('T_NEQ', "!=", self.line_number)
                     self.current_line = self.current_line[j+1:]
-                else: # TODO: exit gracefully
-                    pass
+                else: 
+                    raise ScannerException(self.line_number, i, "Unidentifiable token.")
             # handle '*' Tokens
             elif(self.current_line[i] == '*'):
                 self.next_token = Token('T_MULT', "*", self.line_number)
@@ -157,8 +162,9 @@ class Scanner(object):
                         if(j == len(self.current_line)):
                             self.current_line = self.input_file.readline()
                             if not self.current_line:
-                                print("Scanning Error: Expected an additional '/*' to close the comment block beginning at line " + str(self.line_number) + ", index " + str(i) + ".")
-                                exit()
+                                raise ScannerException(self.line_number, i, 'Expected an additional "*/" to close the comment block.')
+                                #print("Scanning Error: Expected an additional '/*' to close the comment block beginning at line " + str(self.line_number) + ", index " + str(i) + ".")
+                                #exit()
                             else:
                                 new_line_number += 1
                                 j = 0
@@ -183,12 +189,14 @@ class Scanner(object):
                 while(self.current_line[j] != '"'):
                     j += 1
                     if(j == len(self.current_line)):
-                        print("Scanning Error: Expected an additional '\"' to close the string beginning at line " + str(self.line_number) + ", index " + str(i) + ".")
-                        exit()
+                        raise ScannerException(self.line_number, i, "Expected an additional '\"' to close the string.")
+                        #print("Scanning Error: Expected an additional '\"' to close the string beginning at line " + str(self.line_number) + ", index " + str(i) + ".")
+                        #exit()
                 token_string = self.current_line[i+1:j]
                 self.next_token = Token('T_STRVAL', token_string, self.line_number)
                 self.current_line = self.current_line[j+1:]
             # we've hit something we can't recognize
             else:
-                print("Scanning Error: Unidentifiable token at line " + str(self.line_number) + ", index " + str(i) + ".")
-                exit()
+                raise ScannerException(self.line_number, i, "Unidentifiable token.")
+                #print("Scanning Error: Unidentifiable token at line " + str(self.line_number) + ", index " + str(i) + ".")
+                #exit()

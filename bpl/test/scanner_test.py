@@ -12,8 +12,12 @@ if __name__ == "__main__":
         print("Error: File not found!")
         sys.exit()
     scanner = Scanner(input_file)
-    scanner.get_next_token()
-    while(scanner.next_token.kind != TokenType.T_EOF):
-        print(scanner.next_token)
+    try:
         scanner.get_next_token()
+        while(scanner.next_token.kind != TokenType.T_EOF):
+            print scanner.next_token
+            scanner.get_next_token()
+    except ScannerException as e:
+        print e.message
+        sys.exit()
     input_file.close()

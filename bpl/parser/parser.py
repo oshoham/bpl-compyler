@@ -5,6 +5,7 @@ DATE: Feb. 16, 2014
 A Parser for the BPL programming language. Implemented for CS331 at Oberlin College.
 """
 
+import sys
 from bpl.scanner.scanner import Scanner
 from bpl.scanner.token import TokenType, Token, is_type_token, is_rel_op, is_add_op, is_mul_op
 from bpl.parser.parsetree import *
@@ -26,9 +27,9 @@ class Parser(object):
         """Attempt to parse the Parser's input file, catching ParserExceptions."""
         try:
             parse_tree = self.program()
-        except ParserException as p:
-            print p.message
-            exit()
+        except (ScannerException, ParserException) as e:
+            print e.message
+            sys.exit()
         return parse_tree
 
     def program(self):
