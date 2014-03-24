@@ -25,15 +25,10 @@ def lookup(symbol, symbol_table):
             return symbol_table[scope][symbol]
     return None
 
-def find_references(declaration, symbol_table, debug):
+def find_references(parse_tree, symbol_table, debug):
     """Iterate through the top-level declarations of the parse tree and create links between expressions and their declarations."""
+    declaration = parse_tree
     while declaration is not None:
-        if debug:
-            print 'In "find_references", current declaration type is {}, line number is {}.'.format(
-                    NodeType.names[declaration.kind],
-                    declaration.line_number
-            )
-
         symbol_table[0][declaration.name] = declaration
 
         if declaration.kind in (NodeType.VAR_DEC, NodeType.ARRAY_DEC):
@@ -58,11 +53,6 @@ def find_references(declaration, symbol_table, debug):
 
 def find_references_statement(statement, symbol_table, debug):
     """Create links between expressions associated with a statement and their declarations in the symbol table."""
-    if debug:
-        print 'In "find_references_statement", current statement type is {}, line number is {}.'.format(
-                NodeType.names[statement.kind],
-                statement.line_number
-        )
     if statement.kind is NodeType.EXP_STATEMENT:
         find_references_expression(statement.expression, symbol_table, debug)
 
@@ -105,11 +95,6 @@ def find_references_statement(statement, symbol_table, debug):
         raise TypeCheckerException(statement.line_number, 'Statement node is not a valid type of statement.')
 
 def find_references_expression(expression, symbol_table, debug):
-    if debug:
-        print 'In "find_references_expression", current expression type is {}, line number is {}.'.format(
-                NodeType.names[expression.kind],
-                expression.line_number
-        )
     if expression.kind in (NodeType.VAR_EXP, NodeType.ARRAY_EXP):
         dec = lookup(expression.name, symbol_table)
         if dec is None:
@@ -118,6 +103,13 @@ def find_references_expression(expression, symbol_table, debug):
                     'Undeclared variable or array with name {}.'.format(expression.name)
             )
         expression.declaration = dec
+        if debug:
+            print '{} {} on line {} linked to declaration on line {}.'.format(
+                    'Variable' if expression.kind is NodeType.VAR_EXP else 'Array',
+                    expression.name,
+                    expression.line_number,
+                    dec.line_number
+            )
 
     elif expression.kind is NodeType.FUN_CALL_EXP:
         if expression.name not in symbol_table[0]:
@@ -127,6 +119,12 @@ def find_references_expression(expression, symbol_table, debug):
             )
 
         expression.declaration = symbol_table[0][expression.name]
+        if debug:
+            print 'Function call {} on line {} linked to declaration on line {}.'.format(
+                    expression.name,
+                    expression.line_number,
+                    expression.declaration.line_number
+            )
 
         arg = expression.arguments
         while arg is not None:
