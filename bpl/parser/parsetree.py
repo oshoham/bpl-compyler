@@ -236,9 +236,10 @@ class VarExpNode(ExpressionNode):
         self.declaration = None
 
     def __str__(self):
-        string = '{} id = {}{}'.format(
+        string = '{} id = {}{}{}'.format(
                 self.base_string,
                 self.name,
+                '\nDeclaration:\n'+indent(dec_info(self.declaration))+'\n' if self.declaration is not None else '',
                 str_if_not_none(self.next_node)
         )
         return string
@@ -268,12 +269,14 @@ class ArrayExpNode(VarExpNode):
     def __init__(self, kind, line_number, name, expression, next_node = None):
         VarExpNode.__init__(self, kind, line_number, name, next_node)
         self.expression = expression
+        self.declaration = None
 
     def __str__(self):
-        string = '{} id = {}\nIndex Expression:\n{}{}'.format(
+        string = '{} id = {}\nIndex Expression:\n{}{}{}'.format(
                 self.base_string,
                 self.name,
                 indent(self.expression),
+                '\nDeclaration:\n'+indent(dec_info(self.declaration))+'\n' if self.declaration is not None else '',
                 str_if_not_none(self.next_node)
         )
         return string
@@ -369,11 +372,12 @@ class FunCallExpNode(ExpressionNode):
         self.declaration = None
 
     def __str__(self):
-        string = '{} name = {}{}{}{}'.format(
+        string = '{} name = {}{}{}{}{}'.format(
                 self.base_string,
                 self.name,
                 '\nArguments:\n' if self.arguments is not None else '',
                 indent(self.arguments),
+                '\nDeclaration:\n'+indent(dec_info(self.declaration))+'\n' if self.declaration is not None else '',
                 str_if_not_none(self.next_node)
         )
         return string
@@ -395,3 +399,32 @@ def indent(s):
     for line in str(s).splitlines():
         indented_string += '| {}\n'.format(line)
     return indented_string[:-1]
+
+def dec_info(dec):
+    """Return a string containing information about a declaration (for use in an expression node's __str__ function)."""
+    if not isinstance(dec, DecNode):
+        return ''
+    if dec.kind is NodeType.VAR_DEC:
+        return '{}{} id = {} type = {} ({})'.format(
+                dec.base_string,
+                ' (pointer)' if dec.is_pointer else '',
+                dec.name,
+                dec.type_token.kind,
+                TokenType.names[dec.type_token.kind]
+        )
+    elif dec.kind is NodeType.ARRAY_DEC:
+        return '{}{} id = {} type = {} ({}) size = {}'.format(
+                dec.base_string,
+                ' (pointer)' if dec.is_pointer else '',
+                dec.name,
+                dec.type_token.kind,
+                TokenType.names[dec.type_token.kind],
+                str(dec.size)
+        )
+    elif dec.kind is NodeType.FUN_DEC:
+        return '{} id = {} return type = {} ({})'.format(
+                dec.base_string,
+                dec.name,
+                dec.type_token.kind,
+                TokenType.names[dec.type_token.kind],
+        )
