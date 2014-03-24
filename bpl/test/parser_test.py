@@ -1,4 +1,5 @@
-from bpl.parser.parser import Parser
+from bpl.parser.parser import Parser, ParserException
+from bpl.scanner.scanner import ScannerException
 import sys
 
 if __name__ == "__main__":
@@ -10,7 +11,11 @@ if __name__ == "__main__":
     except IOError:
         print("Error: File not found!")
         sys.exit()
-    parser = Parser(input_file)
-    parse_tree = parser.parse()
+    try: 
+        parser = Parser(input_file)
+        parse_tree = parser.parse()
+    except (ScannerException, ParserException) as e:
+        print e.message
+        sys.exit()
     print parse_tree
     input_file.close()

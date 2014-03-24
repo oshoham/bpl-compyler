@@ -24,13 +24,8 @@ class Parser(object):
         self.scanner.get_next_token()
 
     def parse(self):
-        """Attempt to parse the Parser's input file, catching ParserExceptions."""
-        try:
-            parse_tree = self.program()
-        except (ScannerException, ParserException) as e:
-            print e.message
-            sys.exit()
-        return parse_tree
+        """Parse the Parser's input file."""
+        return self.program()
 
     def program(self):
         """Return a complete parse tree."""
