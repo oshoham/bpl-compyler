@@ -4,6 +4,7 @@ DATE: long ago in a distant land...
 """
 
 from bpl.parser.parsetree import *
+from bpl.scanner.token import TokenType
 
 class TypeCheckerException(Exception):
     def __init__(self, line_number, message):
@@ -142,12 +143,14 @@ def find_references_expression(expression, symbol_table, debug):
         pass
 
     else:
-        raise TypeCheckerException(statement.line_number, 'Expression node is not a valid type of expression.')
+        raise TypeCheckerException(expression.line_number, 'Expression node is not a valid type of expression.')
 
-def type_check_top_level(parse_tree, debug):
+def type_check_declarations(parse_tree, debug):
     declaration = parse_tree
     while declaration is not None:
         if declaration.kind in (NodeType.VAR_DEC, NodeType.ARRAY_DEC):
+            if declaration.type_token.kind is TokenType.T_VOID:
+                raise TypeCheckerException(declaration.line_number, 'Cannot have a variable or array of type "void".')
             declaration = declaration.next_node
 
         elif declaration.kind is NodeType.FUN_DEC:
@@ -166,19 +169,139 @@ def type_check_top_level(parse_tree, debug):
 
 def type_check_statement(statement, return_type, debug):
     if statement.kind is NodeType.EXP_STATEMENT:
+        type_check_expression(statement.expression, debug)
 
     elif statement.kind is NodeType.WHILE_STATEMENT:
+        type_check_expression(statement.condition, debug)
+        if statement.condition.type_string is not 'int':
+            raise TypeCheckerException(statement.line_number, 'Type of while condition is "{}", but should be "int".'.format(statement.condition.type_string))
+        type_check_statement(statement.statement, return_type, debug)
 
     elif statement.kind is NodeType.RETURN_STATEMENT:
+        type_check_expression(statement.expression, debug)
+        if return_type is TokenType.T_INT:
+            if statement.expression.type_string is not 'int':
+                raise TypeCheckerException(statement.line_number, 'Function has a return type of int, but returns {}.'.format(statement.expression.type_string))
+        elif return_type is TokenType.T_STRING:
+            if statement.expression.type_string is not 'string':
+                raise TypeCheckerException(statement.line_number, 'Function has a return type of string, but returns {}.'.format(statement.expression.type_string))
+        else:
+            raise TypeCheckerException(statement.line_number, 'Function has a return type of void, but returns {}.'.format(statement.expression.type_string))
 
     elif statement.kind is NodeType.WRITE_STATEMENT:
+        type_check_expression(statement.expression, debug)
 
     elif statement.kind is NodeType.WRITELN_STATEMENT:
         pass
 
     elif statement.kind is NodeType.IF_STATEMENT:
+        type_check_expression(statement.condition, debug)
+        if statement.condition.type_string is not 'int':
+            raise TypeCheckerException(statement.line_number, 'Type of if condition is "{}", but should be "int".'.format(statement.condition.type_string))
+        type_check_statement(statement.statement, return_type, debug)
+        type_check_statement(statement.else_statement, return_type, debug)
 
     elif statement.kind is NodeType.CMPND_STATEMENT:
+        dec = statement.local_declarations
+        while dec is not None:
+            if dec.type_token.kind is TokenType.T_VOID:
+                raise TypeCheckerException(dec.line_number, 'Cannot have a variable or array of type "void".')
+
+        stmnt = statement.statements 
+        while stmnt is not None:
+            type_check_statement(stmnt, return_type, debug)
+            stmnt = stmnt.next_node
 
     else:
         raise TypeCheckerException(statement.line_number, 'Statement node is not a valid type of statement.')
+
+def type_check_expression(expression, debug):
+    if expression.kind is NodeType.VAR_EXP:
+        if expression.declaration.type_token.kind is TokenType.T_INT:
+            if expression.declaration.is_pointer:
+                expression.type_string = 'pointer to int'
+            else:
+                expression.type_string = 'int'
+        elif expression.declaration.type_token.kind is TokenType.T_STRING:
+            if expression.declaration.is_pointer:
+                expression.type_string = 'pointer to string'
+            else:
+                expression.type_string = 'string'
+        else:
+            raise TypeCheckerException(expression.line_number, 'Cannot have a variable of type "void".')
+
+    elif expression.kind is NodeType.ARRAY_EXP:
+        if expression.declaration.kind is not NodeType.ARRAY_DEC:
+            raise TypeCheckerException(expression.line_number, 'Cannot take an element reference of a non-array.')
+        type_check_expression(expression.expression, debug)
+        if expression.expression.type_string != 'int':
+            raise TypeCheckerException(expression.line_number, 'Array element reference expression must be of type "int".')
+        if expression.declaration.type_token.kind is TokenType.T_INT:
+            expression.type_string = 'int'
+        elif expression.declaration.type_token.kind is TokenType.T_STRING:
+            expression.type_string = 'string'
+        else:
+            raise TypeCheckerException(expression.line_number, 'Cannot have an array of type "void".')
+    
+    elif expression.kind is NodeType.FUN_CALL_EXP:
+        pass
+    
+    elif expression.kind is NodeType.ASSIGN_EXP:
+        pass
+
+    elif expression.kind is NodeType.COMP_EXP:
+        type_check_expression(expression.left, debug)
+        type_check_expression(expression.right, debug)
+        if expression.left.type_string == expression.right.type_string:
+            raise TypeCheckerException(expression.line_number, 'Left side of comparison expression has type "{}", but right side has type "{}".'.format(
+                expression.left.type_string,
+                expression.right.type_string
+                )
+            )
+        expression.type_string = expression.left.type_string
+
+    elif expression.kind is NodeType.MATH_EXP:
+        type_check_expression(expression.left, debug)
+        type_check_expression(expression.right, debug)
+        if expression.left.type_string != 'int':
+            raise TypeCheckerException(expression.line_number, 'Left side of arithmetic expression has type "{}", but should have type "int".'.format(
+                expression.left.type_string
+                )
+            )
+
+        if expression.right.type_string != 'int':
+            raise TypeCheckerException(expression.line_number, 'Right side of arithmetic expression has type "{}", but should have type "int".'.format(
+                expression.right.type_string
+                )
+            )
+        expression.type_string = 'int' 
+
+    elif expression.kind is NodeType.ADDRESS_EXP:
+        type_check_expression(expression.expression, debug)
+        if expression.expression.kind not in (NodeType.VAR_EXP, NodeType.ARRAY_EXP):
+            raise TypeCheckerException(expression.line_number, 'Can only take the address of a variable or array element.')
+        expression.type_string = 'int'
+
+    elif expression.kind is NodeType.DEREF_EXP:
+        type_check_expression(expression.expression, debug)
+        if expression.expression.type_string == 'pointer to int':
+            expression.type_string = 'int'
+        elif expression.expression.type_string == 'pointer to string':
+            expression.type_string = 'string'
+        else:
+            raise TypeCheckerException(expression.line_number, 'Can only dereference pointers to integers or strings.')
+
+    elif expression.kind is NodeType.NEG_EXP:
+        type_check_expression(expression.expression, debug)
+        if expression.expression.type_string != 'int':
+            raise TypeCheckerException(expression.line_number, 'Cannot take the negative of a non-integer value.')
+        expression.type_string = 'int'
+    
+    elif expression.kind in (NodeType.NUM_EXP, NodeType.READ_EXP):
+        expression.type_string = 'int'
+
+    elif expression.kind is NodeType.STR_EXP:
+        expression.type_string = 'string'
+
+    else:
+        raise TypeCheckerException(expression.line_number, 'Expression node is not a valid type of expression.')

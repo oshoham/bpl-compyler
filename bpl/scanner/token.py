@@ -17,7 +17,7 @@ def enum(*sequential, **named):
     return type('Enum', (), enums)
 
 # An "Enum" that maps Token types onto integers.
-# TokenType.T_ID => 0, TokenType.T_ID => 1, etc.
+# TokenType.T_ID => 0, TokenType.T_NUM => 1, etc.
 TokenType = enum('T_ID',
         'T_NUM',
         'T_INT',
