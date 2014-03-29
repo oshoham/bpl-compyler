@@ -1,7 +1,5 @@
 /* A program to input, sort, and output. */
 
-string foo = "fooo";
-
 int x[10];
 
 void switch (int A[], int i, int j) { 

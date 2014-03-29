@@ -107,6 +107,8 @@ def find_references_expression(expression, symbol_table, debug):
                     'Undeclared variable or array with name {}.'.format(expression.name)
             )
         expression.declaration = dec
+        if expression.kind is NodeType.ARRAY_EXP:
+            find_references_expression(expression.expression, symbol_table, debug)
         if debug:
             print '{} {} on line {} linked to declaration on line {}.'.format(
                     'Variable' if expression.kind is NodeType.VAR_EXP else 'Array',
@@ -197,7 +199,8 @@ def type_check_statement(statement, return_type, debug):
         if statement.condition.type_string is not 'int':
             raise TypeCheckerException(statement.line_number, 'Type of if condition is "{}", but should be "int".'.format(statement.condition.type_string))
         type_check_statement(statement.statement, return_type, debug)
-        type_check_statement(statement.else_statement, return_type, debug)
+        if statement.else_statement is not None:
+            type_check_statement(statement.else_statement, return_type, debug)
 
     elif statement.kind is NodeType.CMPND_STATEMENT:
         dec = statement.local_declarations
