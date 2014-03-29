@@ -15,6 +15,7 @@ def type_check(parse_tree, debug=False):
     symbol_table = [{}] # this is meant to function as a stack of symbol tables
     find_references(parse_tree, symbol_table, debug)
     # do bottom up pass
+    type_check_declarations(parse_tree, debug)
 
 def lookup(symbol, symbol_table):
     """Check whether symbol is a key in any of the dictionaries in symbol table, starting at the top of stack.
@@ -41,6 +42,8 @@ def find_references(parse_tree, symbol_table, debug):
             while param is not None:
                 if param.kind not in (NodeType.VAR_DEC, NodeType.ARRAY_DEC):
                     raise TypeCheckerException(param.line_number, 'Function parameter is not a variable, pointer, or array.')
+                if param.type_token.kind is TokenType.T_VOID:
+                    raise TypeCheckerException(param.line_number, 'Cannot have a function parameter of type "void".')
                 local_variables[param.name] = param
                 param = param.next_node
 
@@ -154,13 +157,8 @@ def type_check_declarations(parse_tree, debug):
             declaration = declaration.next_node
 
         elif declaration.kind is NodeType.FUN_DEC:
-            """
-            raise TypeCheckerException(declaration.line_number, 'Function {} has a return type of {}, but returns {}.'.format(
-                declaration.name,
-                TokenType.names[declaration.type_token.kind],
-                return_type
-            ))
-            """
+            if declaration.type_token.kind not in (TokenType.T_INT, TokenType.T_STRING, TokenType.T_VOID):
+                raise TypeCheckerException(declaration.line_number, 'Function declaration must have a type of "int", "string", or "void".')
             type_check_statement(declaration.body, declaration.type_token.kind, debug)
             declaration = declaration.next_node
 
@@ -206,6 +204,7 @@ def type_check_statement(statement, return_type, debug):
         while dec is not None:
             if dec.type_token.kind is TokenType.T_VOID:
                 raise TypeCheckerException(dec.line_number, 'Cannot have a variable or array of type "void".')
+            dec = dec.next_node
 
         stmnt = statement.statements 
         while stmnt is not None:
@@ -217,18 +216,28 @@ def type_check_statement(statement, return_type, debug):
 
 def type_check_expression(expression, debug):
     if expression.kind is NodeType.VAR_EXP:
-        if expression.declaration.type_token.kind is TokenType.T_INT:
-            if expression.declaration.is_pointer:
-                expression.type_string = 'pointer to int'
+        if expression.declaration.kind is NodeType.VAR_DEC:
+            if expression.declaration.type_token.kind is TokenType.T_INT:
+                if expression.declaration.is_pointer:
+                    expression.type_string = 'pointer to int'
+                else:
+                    expression.type_string = 'int'
+            elif expression.declaration.type_token.kind is TokenType.T_STRING:
+                if expression.declaration.is_pointer:
+                    expression.type_string = 'pointer to string'
+                else:
+                    expression.type_string = 'string'
             else:
-                expression.type_string = 'int'
-        elif expression.declaration.type_token.kind is TokenType.T_STRING:
+                raise TypeCheckerException(expression.line_number, 'Cannot have a variable of type "void".')
+        elif expression.declaration.kind is NodeType.ARRAY_DEC:
             if expression.declaration.is_pointer:
-                expression.type_string = 'pointer to string'
+                raise TypeCheckerException(expression.line_number, 'Cannot have a pointer to an array.')
+            if expression.declaration.type_token.kind is TokenType.T_INT:
+                expression.type_string = 'int array'
+            elif expression.declaration.type_token.kind is TokenType.T_STRING:
+                expression.type_string = 'string array'
             else:
-                expression.type_string = 'string'
-        else:
-            raise TypeCheckerException(expression.line_number, 'Cannot have a variable of type "void".')
+                raise TypeCheckerException(expression.line_number, 'Cannot have a variable of type "void".')
 
     elif expression.kind is NodeType.ARRAY_EXP:
         if expression.declaration.kind is not NodeType.ARRAY_DEC:
@@ -244,15 +253,94 @@ def type_check_expression(expression, debug):
             raise TypeCheckerException(expression.line_number, 'Cannot have an array of type "void".')
     
     elif expression.kind is NodeType.FUN_CALL_EXP:
-        pass
+        num_params = 0
+        num_args = 0
+        param = expression.declaration.params
+        arg = expression.arguments
+        while arg is not None and param is not None:
+            type_check_expression(arg, debug)
+            
+            # check that arg and param have the same type
+            if param.kind is NodeType.VAR_DEC:
+                if param.is_pointer:
+                    if param.type_token.kind is TokenType.T_INT and arg.type_string != 'pointer to int':
+                        raise TypeCheckerException(arg.line_number, 'Function parameter has type "pointer to int", but argument has type "{}".'.format(
+                            arg.type_string
+                            )
+                        )
+                    elif param.type_token.kind is TokenType.T_STRING and arg.type_string != 'pointer to string':
+                        raise TypeCheckerException(arg.line_number, 'Function parameter has type "pointer to string", but argument has type "{}".'.format(
+                            arg.type_string
+                            )
+                        )
+                else:
+                    if param.type_token.kind is TokenType.T_INT and arg.type_string != 'int':
+                        raise TypeCheckerException(arg.line_number, 'Function parameter has type "int", but argument has type "{}".'.format(
+                            arg.type_string
+                            )
+                        )
+                    elif param.type_token.kind is TokenType.T_STRING and arg.type_string != 'string':
+                        raise TypeCheckerException(arg.line_number, 'Function parameter has type "string", but argument has type "{}".'.format(
+                            arg.type_string
+                            )
+                        )
+            else: # param.kind is ARRAY_DEC
+                if param.is_pointer:
+                    raise TypeCheckerException(param.line_number, 'Cannot have a pointer to an array.')
+                if param.type_token.kind is TokenType.T_INT and arg.type_string != 'int array':
+                    raise TypeCheckerException(arg.line_number, 'Function parameter has type "int array", but argument has type "{}".'.format(
+                        arg.type_string
+                        )
+                    )
+                elif param.type_token.kind is TokenType.T_STRING and arg.type_string != 'string array':
+                    raise TypeCheckerException(arg.line_number, 'Function parameter has type "string array", but argument has type "{}".'.format(
+                        arg.type_string
+                        )
+                    )
+            num_params += 1
+            num_args += 1
+            param = param.next_node
+            arg = arg.next_node
+
+        # check that the lengths of the parameter and argument lists are equal
+        if (arg is None and param is not None) or (param is None and arg is not None):
+            while arg is not None:
+                arg = arg.next_node
+                num_args += 1
+            while param is not None:
+                param = param.next_node
+                num_params += 1
+            raise TypeCheckerException(expression.line_number, 'Function {} takes {} parameters, but is called with {} arguments.'.format(
+                expression.name,
+                num_params,
+                num_args
+                )
+            )
+
+        if expression.declaration.type_token.kind is TokenType.T_INT:
+            expression.type_string = 'int'
+        elif expression.declaration.type_token.kind is TokenType.T_STRING:
+            expression.type_string = 'string'
+        else:
+            expression.type_string = 'void'
     
     elif expression.kind is NodeType.ASSIGN_EXP:
-        pass
+        type_check_expression(expression.left, debug)
+        type_check_expression(expression.right, debug)
+        if not is_l_value(expression.left):
+            raise TypeCheckerException(expression.line_number, 'Left side of assignment expression is not an assignable value.')
+        if expression.left.type_string != expression.right.type_string:
+            raise TypeCheckerException(expression.line_number, 'Left side of assignment expression has type "{}", but right side has type "{}".'.format(
+                expression.left.type_string,
+                expression.right.type_string
+                )
+            )
+        expression.type_string = expression.left.type_string
 
     elif expression.kind is NodeType.COMP_EXP:
         type_check_expression(expression.left, debug)
         type_check_expression(expression.right, debug)
-        if expression.left.type_string == expression.right.type_string:
+        if expression.left.type_string != expression.right.type_string:
             raise TypeCheckerException(expression.line_number, 'Left side of comparison expression has type "{}", but right side has type "{}".'.format(
                 expression.left.type_string,
                 expression.right.type_string
@@ -305,3 +393,8 @@ def type_check_expression(expression, debug):
 
     else:
         raise TypeCheckerException(expression.line_number, 'Expression node is not a valid type of expression.')
+
+def is_l_value(node):
+    if node.kind in (NodeType.VAR_EXP, NodeType.ARRAY_EXP, NodeType.DEREF_EXP):
+        return True
+    return False
