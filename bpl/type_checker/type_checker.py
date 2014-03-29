@@ -239,6 +239,13 @@ def type_check_expression(expression, debug):
             else:
                 raise TypeCheckerException(expression.line_number, 'Cannot have a variable of type "void".')
 
+        if debug:
+            print 'Variable {} on line {} assigned type "{}".'.format(
+                    expression.name,
+                    expression.line_number,
+                    expression.type_string
+            )
+
     elif expression.kind is NodeType.ARRAY_EXP:
         if expression.declaration.kind is not NodeType.ARRAY_DEC:
             raise TypeCheckerException(expression.line_number, 'Cannot take an element reference of a non-array.')
@@ -251,6 +258,13 @@ def type_check_expression(expression, debug):
             expression.type_string = 'string'
         else:
             raise TypeCheckerException(expression.line_number, 'Cannot have an array of type "void".')
+
+        if debug:
+            print 'Array {} on line {} assigned type "{}".'.format(
+                    expression.name,
+                    expression.line_number,
+                    expression.type_string
+            )
     
     elif expression.kind is NodeType.FUN_CALL_EXP:
         num_params = 0
@@ -323,6 +337,13 @@ def type_check_expression(expression, debug):
             expression.type_string = 'string'
         else:
             expression.type_string = 'void'
+
+        if debug:
+            print 'Call to function {} on line {} assigned type "{}".'.format(
+                    expression.name,
+                    expression.line_number,
+                    expression.type_string
+            )
     
     elif expression.kind is NodeType.ASSIGN_EXP:
         type_check_expression(expression.left, debug)
@@ -337,6 +358,12 @@ def type_check_expression(expression, debug):
             )
         expression.type_string = expression.left.type_string
 
+        if debug:
+            print 'Assignment expression on line {} assigned type "{}".'.format(
+                    expression.line_number,
+                    expression.type_string
+            )
+
     elif expression.kind is NodeType.COMP_EXP:
         type_check_expression(expression.left, debug)
         type_check_expression(expression.right, debug)
@@ -347,6 +374,12 @@ def type_check_expression(expression, debug):
                 )
             )
         expression.type_string = expression.left.type_string
+
+        if debug:
+            print 'Comparison expression on line {} assigned type "{}".'.format(
+                    expression.line_number,
+                    expression.type_string
+            )
 
     elif expression.kind is NodeType.MATH_EXP:
         type_check_expression(expression.left, debug)
@@ -364,11 +397,20 @@ def type_check_expression(expression, debug):
             )
         expression.type_string = 'int' 
 
+        if debug:
+            print 'Arithmetic expression on line {} assigned type "{}".'.format(
+                    expression.line_number,
+                    expression.type_string
+            )
+
     elif expression.kind is NodeType.ADDRESS_EXP:
         type_check_expression(expression.expression, debug)
         if expression.expression.kind not in (NodeType.VAR_EXP, NodeType.ARRAY_EXP):
             raise TypeCheckerException(expression.line_number, 'Can only take the address of a variable or array element.')
         expression.type_string = 'int'
+
+        if debug:
+            print 'Address expression on line {} assigned type "int".'.format(expression.line_number)
 
     elif expression.kind is NodeType.DEREF_EXP:
         type_check_expression(expression.expression, debug)
@@ -379,17 +421,35 @@ def type_check_expression(expression, debug):
         else:
             raise TypeCheckerException(expression.line_number, 'Can only dereference pointers to integers or strings.')
 
+        if debug:
+            print 'Pointer dereference expression on line {} assigned type "{}".'.format(
+                    expression.line_number,
+                    expression.type_string
+            )
+
     elif expression.kind is NodeType.NEG_EXP:
         type_check_expression(expression.expression, debug)
         if expression.expression.type_string != 'int':
             raise TypeCheckerException(expression.line_number, 'Cannot take the negative of a non-integer value.')
         expression.type_string = 'int'
+
+        if debug:
+            print 'Negative expression on line {} assigned type "int".'.format(expression.line_number)
     
     elif expression.kind in (NodeType.NUM_EXP, NodeType.READ_EXP):
         expression.type_string = 'int'
 
+        if debug:
+            print '{} expression on line {} assigned type "int".'.format(
+                    'Integer' if expression.kind is NodeType.NUM_EXP else 'Read',
+                    expression.line_number
+            )
+
     elif expression.kind is NodeType.STR_EXP:
         expression.type_string = 'string'
+
+        if debug:
+            print 'String expression on line {} assigned type "string".'.format(expression.line_number)
 
     else:
         raise TypeCheckerException(expression.line_number, 'Expression node is not a valid type of expression.')
