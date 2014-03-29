@@ -245,15 +245,6 @@ class Parser(object):
         self.expect('T_SEMICOLON', 'Expected a semicolon to end the writeln statement.')
         return WritelnStatementNode('WRITELN_STATEMENT', line_number)
 
-    def read_statement(self):
-        """Return a read statement node."""
-        line_number = self.scanner.line_number
-        self.expect('T_READ', 'Expected the keyword "read" to begin the writeln statement.')
-        self.expect('T_LPAREN', 'Expected a left parenthesis as part of the read statement.')
-        self.expect('T_RPAREN', 'Expected a right parenthesis as part of the read statement.')
-        self.expect('T_SEMICOLON', 'Expected a semicolon to end the read statement.')
-        return ReadStatementNode('READ_STATEMENT', line_number)
-
     def expression(self):
         """Return a single expression node."""
         line_number = self.scanner.line_number
@@ -352,6 +343,8 @@ class Parser(object):
         # handle read expressions
         elif self.scanner.next_token.kind == TokenType.T_READ:
             self.scanner.get_next_token()
+            self.expect('T_LPAREN', 'Expected a left parenthesis as part of the read expression.')
+            self.expect('T_RPAREN', 'Expected a right parenthesis as part of the read expression.')
             return ReadExpNode('READ_EXP', line_number)
 
         # handle pointer dereference expressions

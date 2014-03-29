@@ -227,6 +227,7 @@ class ExpressionNode(TreeNode):
             negative, number, string, read, and function call expression nodes."""
     def __init__(self, kind, line_number, next_node = None):
         TreeNode.__init__(self, kind, line_number, next_node)
+        self.type_string = None
 
 class VarExpNode(ExpressionNode):
     """Represents a variable."""

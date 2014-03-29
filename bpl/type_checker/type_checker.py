@@ -143,3 +143,42 @@ def find_references_expression(expression, symbol_table, debug):
 
     else:
         raise TypeCheckerException(statement.line_number, 'Expression node is not a valid type of expression.')
+
+def type_check_top_level(parse_tree, debug):
+    declaration = parse_tree
+    while declaration is not None:
+        if declaration.kind in (NodeType.VAR_DEC, NodeType.ARRAY_DEC):
+            declaration = declaration.next_node
+
+        elif declaration.kind is NodeType.FUN_DEC:
+            """
+            raise TypeCheckerException(declaration.line_number, 'Function {} has a return type of {}, but returns {}.'.format(
+                declaration.name,
+                TokenType.names[declaration.type_token.kind],
+                return_type
+            ))
+            """
+            type_check_statement(declaration.body, declaration.type_token.kind, debug)
+            declaration = declaration.next_node
+
+        else:
+            raise TypeCheckerException(declaration.line_number, 'Top-level declaration is not a variable, pointer, array, or function.')
+
+def type_check_statement(statement, return_type, debug):
+    if statement.kind is NodeType.EXP_STATEMENT:
+
+    elif statement.kind is NodeType.WHILE_STATEMENT:
+
+    elif statement.kind is NodeType.RETURN_STATEMENT:
+
+    elif statement.kind is NodeType.WRITE_STATEMENT:
+
+    elif statement.kind is NodeType.WRITELN_STATEMENT:
+        pass
+
+    elif statement.kind is NodeType.IF_STATEMENT:
+
+    elif statement.kind is NodeType.CMPND_STATEMENT:
+
+    else:
+        raise TypeCheckerException(statement.line_number, 'Statement node is not a valid type of statement.')
