@@ -23,5 +23,6 @@ if __name__ == "__main__":
     except TypeCheckerException as t:
         print t.message
         sys.exit()
+    print '\nType Checked Parse Tree:\n'
     print parse_tree
     input_file.close()

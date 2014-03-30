@@ -237,9 +237,10 @@ class VarExpNode(ExpressionNode):
         self.declaration = None
 
     def __str__(self):
-        string = '{} id = {}{}{}'.format(
+        string = '{} id = {}{}{}{}'.format(
                 self.base_string,
                 self.name,
+                ' type = {}'.format(self.type_string) if self.type_string is not None else '',
                 '\nDeclaration:\n'+indent(dec_info(self.declaration))+'\n' if self.declaration is not None else '',
                 str_if_not_none(self.next_node)
         )
@@ -255,10 +256,11 @@ class OpNode(ExpressionNode):
         self.right = right
 
     def __str__(self):
-        string = '{} token = {} ({})\nLeft:\n{}\nRight:\n{}{}'.format(
+        string = '{} token = {} ({}){}\nLeft:\n{}\nRight:\n{}{}'.format(
                 self.base_string,
                 self.token.kind,
                 TokenType.names[self.token.kind],
+                ' type = {}'.format(self.type_string) if self.type_string is not None else '',
                 indent(self.left),
                 indent(self.right),
                 str_if_not_none(self.next_node)
@@ -273,9 +275,10 @@ class ArrayExpNode(VarExpNode):
         self.declaration = None
 
     def __str__(self):
-        string = '{} id = {}\nIndex Expression:\n{}{}{}'.format(
+        string = '{} id = {}{}\nIndex Expression:\n{}{}{}'.format(
                 self.base_string,
                 self.name,
+                ' type = {}'.format(self.type_string) if self.type_string is not None else '',
                 indent(self.expression),
                 '\nDeclaration:\n'+indent(dec_info(self.declaration))+'\n' if self.declaration is not None else '',
                 str_if_not_none(self.next_node)
@@ -289,8 +292,9 @@ class DerefExpNode(ExpressionNode):
         self.expression = expression
 
     def __str__(self):
-        string = '{}\nPointer Expression:\n{}{}'.format(
+        string = '{}{}\nPointer Expression:\n{}{}'.format(
                 self.base_string,
+                ' type = {}'.format(self.type_string) if self.type_string is not None else '',
                 indent(self.expression),
                 str_if_not_none(self.next_node)
         )
@@ -303,8 +307,9 @@ class AddressExpNode(ExpressionNode):
         self.expression = expression
 
     def __str__(self):
-        string = '{}\nReference Expression:\n{}{}'.format(
+        string = '{}{}\nReference Expression:\n{}{}'.format(
                 self.base_string,
+                ' type = {}'.format(self.type_string) if self.type_string is not None else '',
                 indent(self.expression),
                 str_if_not_none(self.next_node)
         )
@@ -317,8 +322,9 @@ class NegExpNode(ExpressionNode):
         self.expression = expression
 
     def __str__(self):
-        string = '{}\nNegated Expression:\n{}{}'.format(
+        string = '{}{}\nNegative Expression:\n{}{}'.format(
                 self.base_string,
+                ' type = {}'.format(self.type_string) if self.type_string is not None else '',
                 indent(self.expression),
                 str_if_not_none(self.next_node)
         )
@@ -331,9 +337,10 @@ class NumExpNode(ExpressionNode):
         self.number = number
     
     def __str__(self):
-        string = '{} number = {}{}'.format(
+        string = '{} number = {}{}{}'.format(
                 self.base_string,
                 self.number,
+                ' type = {}'.format(self.type_string) if self.type_string is not None else '',
                 str_if_not_none(self.next_node)
         )
         return string
@@ -345,9 +352,10 @@ class StringExpNode(ExpressionNode):
         self.string = string
     
     def __str__(self):
-        string = '{} string = {}{}'.format(
+        string = '{} string = {}{}{}'.format(
                 self.base_string,
                 self.string,
+                ' type = {}'.format(self.type_string) if self.type_string is not None else '',
                 str_if_not_none(self.next_node)
         )
         return string
@@ -358,8 +366,9 @@ class ReadExpNode(ExpressionNode):
         ExpressionNode.__init__(self, kind, line_number, next_node)
 
     def __str__(self):
-        string = '{}{}'.format(
+        string = '{}{}{}'.format(
                 self.base_string,
+                ' type = {}'.format(self.type_string) if self.type_string is not None else '',
                 str_if_not_none(self.next_node)
         )
         return string
@@ -373,9 +382,10 @@ class FunCallExpNode(ExpressionNode):
         self.declaration = None
 
     def __str__(self):
-        string = '{} name = {}{}{}{}{}'.format(
+        string = '{} name = {}{}{}{}{}{}'.format(
                 self.base_string,
                 self.name,
+                ' type = {}'.format(self.type_string) if self.type_string is not None else '',
                 '\nArguments:\n' if self.arguments is not None else '',
                 indent(self.arguments),
                 '\nDeclaration:\n'+indent(dec_info(self.declaration))+'\n' if self.declaration is not None else '',
