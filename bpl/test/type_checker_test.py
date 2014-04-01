@@ -18,11 +18,13 @@ if __name__ == "__main__":
     except (ScannerException, ParserException) as e:
         print e.message
         sys.exit()
+    debug = True
     try:
-        type_check(parse_tree, True)
+        type_check(parse_tree, debug)
     except TypeCheckerException as t:
         print t.message
         sys.exit()
-    print '\nType Checked Parse Tree:\n'
+    if debug:
+        print '\nType Checked Parse Tree:\n'
     print parse_tree
     input_file.close()
