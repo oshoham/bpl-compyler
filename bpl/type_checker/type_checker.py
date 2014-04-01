@@ -13,8 +13,9 @@ class TypeCheckerException(Exception):
 
 def type_check(parse_tree, debug=False):
     symbol_table = [{}] # this is meant to function as a stack of symbol tables
+    # top down pass through the parse tree
     find_references(parse_tree, symbol_table, debug)
-    # do bottom up pass
+    # bottom up pass through the parse tree
     type_check_declarations(parse_tree, debug)
 
 def lookup(symbol, symbol_table):
@@ -31,8 +32,10 @@ def find_references(parse_tree, symbol_table, debug):
     """Iterate through the top-level declarations of the parse tree and create links between expressions and their declarations."""
     declaration = parse_tree
     while declaration is not None:
+        # add the declaration to the top level of the symbol table (bottom of the stack)
         symbol_table[0][declaration.name] = declaration
 
+        # skip variable and array declarations
         if declaration.kind in (NodeType.VAR_DEC, NodeType.ARRAY_DEC):
             declaration = declaration.next_node
 
@@ -44,12 +47,16 @@ def find_references(parse_tree, symbol_table, debug):
                     raise TypeCheckerException(param.line_number, 'Function parameter is not a variable, pointer, or array.')
                 if param.type_token.kind is TokenType.T_VOID:
                     raise TypeCheckerException(param.line_number, 'Cannot have a function parameter of type "void".')
+                # add function parameter to function's local variables
                 local_variables[param.name] = param
                 param = param.next_node
 
-            symbol_table.append(local_variables) # push local variables onto the symbol table stack
+            # push local variables onto the top of the symbol table stack
+            symbol_table.append(local_variables)
+            # link expressions in the function's body to their declarations
             find_references_statement(declaration.body, symbol_table, debug)
-            symbol_table.pop() # pop local variables off of the symbol table stack
+            # pop local variables off of the symbol table stack
+            symbol_table.pop() 
             declaration = declaration.next_node
 
         else:
@@ -82,32 +89,40 @@ def find_references_statement(statement, symbol_table, debug):
     elif statement.kind is NodeType.CMPND_STATEMENT:
         local_variables = {}
         dec = statement.local_declarations
+        # add local declarations to the symbol table
         while dec is not None:
             if dec.kind not in (NodeType.VAR_DEC, NodeType.ARRAY_DEC):
                 raise TypeCheckerException(dec.line_number, 'Local declaration is not a variable, pointer, or array.')
             local_variables[dec.name] = dec
             dec = dec.next_node
 
+        # push local variables onto the symbol table stack
         symbol_table.append(local_variables)
         stmnt = statement.statements # I regret my chosen variable names
         while stmnt is not None:
+            # link expressions in the compound statement to their declarations
             find_references_statement(stmnt, symbol_table, debug)
             stmnt = stmnt.next_node
+        # pop local variables off of the symbol table stack
         symbol_table.pop()
 
     else:
         raise TypeCheckerException(statement.line_number, 'Statement node is not a valid type of statement.')
 
 def find_references_expression(expression, symbol_table, debug):
+    """Create links between expressions and their declarations in the symbol table."""
     if expression.kind in (NodeType.VAR_EXP, NodeType.ARRAY_EXP):
+        # look up expression's declaration in the symbol table
         dec = lookup(expression.name, symbol_table)
         if dec is None:
             raise TypeCheckerException(
                     expression.line_number, 
                     'Undeclared variable or array with name {}.'.format(expression.name)
             )
+        # set expression's declaration field
         expression.declaration = dec
         if expression.kind is NodeType.ARRAY_EXP:
+            # link expressions in array reference to their declarations
             find_references_expression(expression.expression, symbol_table, debug)
         if debug:
             print '{} {} on line {} linked to declaration on line {}.'.format(
@@ -124,6 +139,7 @@ def find_references_expression(expression, symbol_table, debug):
                     'Undeclared function with name {}.'.format(expression.name)
             )
 
+        # look up function declaration in top-level symbol table
         expression.declaration = symbol_table[0][expression.name]
         if debug:
             print 'Function call {} on line {} linked to declaration on line {}.'.format(
@@ -134,6 +150,7 @@ def find_references_expression(expression, symbol_table, debug):
 
         arg = expression.arguments
         while arg is not None:
+            # link expressions in function call arguments to their declarations
             find_references_expression(arg, symbol_table, debug)
             arg = arg.next_node
     
@@ -151,6 +168,7 @@ def find_references_expression(expression, symbol_table, debug):
         raise TypeCheckerException(expression.line_number, 'Expression node is not a valid type of expression.')
 
 def type_check_declarations(parse_tree, debug):
+    """Type check top-level declarations of the parse tree"""
     declaration = parse_tree
     while declaration is not None:
         if declaration.kind in (NodeType.VAR_DEC, NodeType.ARRAY_DEC):
@@ -161,6 +179,7 @@ def type_check_declarations(parse_tree, debug):
         elif declaration.kind is NodeType.FUN_DEC:
             if declaration.type_token.kind not in (TokenType.T_INT, TokenType.T_STRING, TokenType.T_VOID):
                 raise TypeCheckerException(declaration.line_number, 'Function declaration must have a type of "int", "string", or "void".')
+            # type check function body
             type_check_statement(declaration.body, declaration.type_token.kind, debug)
             declaration = declaration.next_node
 
@@ -168,6 +187,7 @@ def type_check_declarations(parse_tree, debug):
             raise TypeCheckerException(declaration.line_number, 'Top-level declaration is not a variable, pointer, array, or function.')
 
 def type_check_statement(statement, return_type, debug):
+    """Type check statements using declaration links created by find_references."""
     if statement.kind is NodeType.EXP_STATEMENT:
         type_check_expression(statement.expression, debug)
 
@@ -218,6 +238,7 @@ def type_check_statement(statement, return_type, debug):
         raise TypeCheckerException(statement.line_number, 'Statement node is not a valid type of statement.')
 
 def type_check_expression(expression, debug):
+    """Type check expressions using declaration links created by find_references."""
     if expression.kind is NodeType.VAR_EXP:
         if expression.declaration.kind is NodeType.VAR_DEC:
             if expression.declaration.type_token.kind is TokenType.T_INT:
@@ -338,7 +359,7 @@ def type_check_expression(expression, debug):
             expression.type_string = 'int'
         elif expression.declaration.type_token.kind is TokenType.T_STRING:
             expression.type_string = 'string'
-        else:
+        else: # expression.declaration.type_token.kind is TokenType.T_VOID
             expression.type_string = 'void'
 
         if debug:
@@ -458,6 +479,7 @@ def type_check_expression(expression, debug):
         raise TypeCheckerException(expression.line_number, 'Expression node is not a valid type of expression.')
 
 def is_l_value(node):
+    """Returns True if node is an assignable value, otherwise False."""
     if node.kind in (NodeType.VAR_EXP, NodeType.ARRAY_EXP, NodeType.DEREF_EXP):
         return True
     return False
