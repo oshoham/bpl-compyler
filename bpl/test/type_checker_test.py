@@ -19,6 +19,8 @@ if __name__ == "__main__":
         print e.message
         sys.exit()
     debug = True
+    if debug:
+        print 'Type Checking Debug Statements:\n'
     try:
         type_check(parse_tree, debug)
     except TypeCheckerException as t:
