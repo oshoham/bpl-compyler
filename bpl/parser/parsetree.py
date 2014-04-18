@@ -56,14 +56,16 @@ class VarDecNode(DecNode):
     def __init__(self, kind, line_number, name, type_token, is_pointer = False, next_node = None):
         DecNode.__init__(self, kind, line_number, name, type_token, next_node)
         self.is_pointer = is_pointer
+        self.offset = None
 
     def __str__(self):
-        string = '{}{} id = {} type = {} ({}){}'.format(
+        string = '{}{} id = {} type = {} ({}){}{}'.format(
                 self.base_string,
                 ' (pointer)' if self.is_pointer else '',
                 self.name,
                 self.type_token.kind,
                 TokenType.names[self.type_token.kind],
+                ' offset = ' + str(self.offset) if self.offset is not None else '',
                 str_if_not_none(self.next_node)
         )
         return string
@@ -95,13 +97,14 @@ class ArrayDecNode(VarDecNode):
         self.size = size
 
     def __str__(self):
-        string = '{}{} id = {} type = {} ({}) size = {}{}'.format(
+        string = '{}{} id = {} type = {} ({}) size = {}{}{}'.format(
                 self.base_string,
                 ' (pointer)' if self.is_pointer else '',
                 self.name,
                 self.type_token.kind,
                 TokenType.names[self.type_token.kind],
                 str(self.size),
+                ' offset = ' + str(self.offset) if self.offset is not None else '',
                 str_if_not_none(self.next_node)
         )
         return string
