@@ -97,10 +97,18 @@ def gen_code_function(function, output_file):
     gen_reg_reg('movq', SP, FP, 'set up the frame pointer', output_file)
     gen_immediate_reg('sub', function.local_var_offset, SP, 'allocate local variables', output_file)
     # generate function body code
+    gen_code_statement(function.body, output_file)
     gen_immediate_reg('add', function.local_var_offset, SP, 'deallocate local variables', output_file)
     gen_no_operands('ret', 'return from function "{}"'.format(function.name), output_file)
 
 def gen_code_statement(statement, output_file):
+    if statement.kind == NodeType.CMPND_STATEMENT:
+        # do some other stuff
+        stmnt = statement.statements
+        while stmnt is not None:
+            gen_code_statement(stmnt, output_file)
+            stmnt = stmnt.next_node
+        
     if statement.kind == NodeType.WRITE_STATEMENT:
         if statement.expression.kind == NodeType.NUM_EXP:
             gen_immediate_reg('movl', statement.expression.number, ACC_32, 'put write statement integer value into accumulator', output_file)
