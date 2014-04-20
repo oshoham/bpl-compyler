@@ -76,6 +76,7 @@ class FunDecNode(DecNode):
         DecNode.__init__(self, kind, line_number, name, type_token, next_node)
         self.params = params
         self.body = body
+        self.local_var_offsets = 0
 
     def __str__(self):
         string = '{} id = {} return type = {} ({})\nParams:\n{}{}Body:\n{}{}'.format(

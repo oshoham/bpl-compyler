@@ -1,4 +1,3 @@
-void f(void) {
-    int *x;
-    *x = read();
+void main(void) {
+    write(34);
 }
