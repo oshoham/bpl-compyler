@@ -112,7 +112,7 @@ def gen_code_statement(statement, output_file):
     if statement.kind == NodeType.WRITE_STATEMENT:
         gen_code_expression(statement.expression, output_file)
         if statement.expression.kind == NodeType.NUM_EXP:
-            gen_reg_reg('movl', ACC_32, ARG1_32, 'integer value to print = arg2', output_file)
+            gen_reg_reg('movl', ACC_32, ARG2_32, 'integer value to print = arg2', output_file)
             gen_immediate_reg('movq', '.WriteIntString', ARG1_64, 'printf integer formatting string = arg1', output_file)
             gen_immediate_reg('movl', 0, ACC_32, 'clear the return value', output_file)
             gen_one_operand('call', 'printf', 'call the C-lib printf function', output_file)
