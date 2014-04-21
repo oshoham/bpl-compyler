@@ -110,11 +110,17 @@ def gen_code_statement(statement, output_file):
             stmnt = stmnt.next_node
         
     if statement.kind == NodeType.WRITE_STATEMENT:
+        gen_code_expression(statement.expression, output_file)
         if statement.expression.kind == NodeType.NUM_EXP:
-            gen_immediate_reg('movl', statement.expression.number, ACC_32, 'put write statement integer value into accumulator', output_file)
             gen_reg_reg('movl', ACC_32, ARG1_32, 'integer value to print = arg2', output_file)
             gen_immediate_reg('movq', '.WriteIntString', ARG1_64, 'printf integer formatting string = arg1', output_file)
             gen_immediate_reg('movl', 0, ACC_32, 'clear the return value', output_file)
             gen_one_operand('call', 'printf', 'call the C-lib printf function', output_file)
-        else: # statement.expression.kind == NodeType.STR_EXP
-            gen_immediate_reg('movq', statement.expression.string, ACC_64, 'put write statement string value into accumulator', output_file)
+        elif statement.expression.kind == NodeType.STR_EXP:
+            pass
+
+def gen_code_expression(expression, output_file):
+    if expression.kind == NodeType.NUM_EXP:
+        gen_immediate_reg('movl', expression.number, ACC_32, 'put integer value into accumulator', output_file)
+    elif expression.kind == NodeType.STR_EXP: 
+        gen_immediate_reg('movq', expression.string, ACC_64, 'put write statement string value into accumulator', output_file)
