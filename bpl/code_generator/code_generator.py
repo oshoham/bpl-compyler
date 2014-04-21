@@ -4,15 +4,16 @@ DATE: 4/9/2014
 """
 
 from bpl.parser.parsetree import *
+from bpl.scanner.token import TokenType
 
-SP = '%rsp'
-FP = '%rbx'
-ACC_64 = '%rax'
-ACC_32 = '%eax'
-ARG2_64 = '%rsi'
-ARG2_32 = '%esi'
-ARG1_64 = '%rdi'
-ARG1_32 = '%edi'
+SP = 'rsp'
+FP = 'rbx'
+ACC_64 = 'rax'
+ACC_32 = 'eax'
+ARG2_64 = 'rsi'
+ARG2_32 = 'esi'
+ARG1_64 = 'rdi'
+ARG1_32 = 'edi'
 
 def generate_code(type_checked_parse_tree, output_file):
     compute_offsets(type_checked_parse_tree)
@@ -71,16 +72,22 @@ def compute_offsets_statement(statement, offset):
         return 0
 
 def gen_reg_reg(opcode, reg1, reg2, comment, output_file):
-    output_file.write('\t{} {}, {} #{}\n'.format(opcode, reg1, reg2, comment))
+    output_file.write('\t{} %{}, %{} #{}\n'.format(opcode, reg1, reg2, comment))
 
 def gen_immediate_reg(opcode, immediate, reg, comment, output_file):
-    output_file.write('\t{} ${}, {} #{}\n'.format(opcode, immediate, reg, comment))
+    output_file.write('\t{} ${}, %{} #{}\n'.format(opcode, immediate, reg, comment))
+
+def gen_indirect_reg(opcode, offset, reg1, reg2, comment, output_file):
+    output_file.write('\t{} {}(%{}), %{} #{}\n'.format(opcode, offset, reg1, reg2, comment))
 
 def gen_no_operands(opcode, comment, output_file):
     output_file.write('\t{} #{}\n'.format(opcode, comment))
 
-def gen_one_operand(opcode, operand, comment, output_file):
+def gen_direct(opcode, operand, comment, output_file):
     output_file.write('\t{} {} #{}\n'.format(opcode, operand, comment))
+
+def gen_reg(opcode, reg, comment, output_file):
+    output_file.write('\t{} %{} #{}\n'.format(opcode, reg, comment))
 
 def gen_header(parse_tree, output_file):
     output_file.write('.section .rodata\n')
@@ -111,11 +118,11 @@ def gen_code_statement(statement, output_file):
         
     if statement.kind == NodeType.WRITE_STATEMENT:
         gen_code_expression(statement.expression, output_file)
-        if statement.expression.kind == NodeType.NUM_EXP:
+        if statement.expression.kind in (NodeType.NUM_EXP, NodeType.MATH_EXP):
             gen_reg_reg('movl', ACC_32, ARG2_32, 'integer value to print = arg2', output_file)
             gen_immediate_reg('movq', '.WriteIntString', ARG1_64, 'printf integer formatting string = arg1', output_file)
             gen_immediate_reg('movl', 0, ACC_32, 'clear the return value', output_file)
-            gen_one_operand('call', 'printf', 'call the C-lib printf function', output_file)
+            gen_direct('call', 'printf', 'call the C-lib printf function', output_file)
         elif statement.expression.kind == NodeType.STR_EXP:
             pass
 
@@ -124,3 +131,10 @@ def gen_code_expression(expression, output_file):
         gen_immediate_reg('movl', expression.number, ACC_32, 'put integer value into accumulator', output_file)
     elif expression.kind == NodeType.STR_EXP: 
         gen_immediate_reg('movq', expression.string, ACC_64, 'put write statement string value into accumulator', output_file)
+    elif expression.kind == NodeType.MATH_EXP:
+        gen_code_expression(expression.left, output_file)
+        gen_reg('push', ACC_64, 'push the value of the left side of arithmetic expression onto the stack', output_file)
+        gen_code_expression(expression.right, output_file)
+        if expression.token.kind == TokenType.T_PLUS:
+            gen_indirect_reg('addl', 0, SP, ACC_32, 'add the left side of the arithmetic expression to the right side', output_file)
+        gen_immediate_reg('addq', 8, SP, 'pop the left side of the arithmetic expression off of the stack', output_file)
