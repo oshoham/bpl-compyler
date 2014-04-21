@@ -6,14 +6,35 @@ DATE: 4/9/2014
 from bpl.parser.parsetree import *
 from bpl.scanner.token import TokenType
 
+# Register names
 SP = 'rsp'
 FP = 'rbx'
 ACC_64 = 'rax'
 ACC_32 = 'eax'
-ARG2_64 = 'rsi'
-ARG2_32 = 'esi'
 ARG1_64 = 'rdi'
 ARG1_32 = 'edi'
+ARG2_64 = 'rsi'
+ARG2_32 = 'esi'
+ARG3_64 = 'rdx'
+ARG3_32 = 'edx'
+ARG4_64 = 'rcx'
+ARG4_32 = 'ecx'
+ARG5_64 = 'r8'
+ARG5_32 = 'r8d'
+ARG6_64 = 'r9'
+ARG6_32 = 'r9d'
+CALLEE_SAVED_1_64 = 'rbx'
+CALLEE_SAVED_1_32 = 'ebx'
+CALLEE_SAVED_2_64 = 'rbp'
+CALLEE_SAVED_2_32 = 'ebp'
+CALLEE_SAVED_3_64 = 'r10'
+CALLEE_SAVED_3_32 = 'r10d'
+CALLEE_SAVED_4_64 = 'r13'
+CALLEE_SAVED_4_32 = 'r13d'
+CALLEE_SAVED_5_64 = 'r14'
+CALLEE_SAVED_5_32 = 'r14d'
+CALLEE_SAVED_6_64 = 'r15'
+CALLEE_SAVED_6_32 = 'r15d'
 
 def generate_code(type_checked_parse_tree, output_file):
     compute_offsets(type_checked_parse_tree)
@@ -80,6 +101,9 @@ def gen_immediate_reg(opcode, immediate, reg, comment, output_file):
 def gen_indirect_reg(opcode, offset, reg1, reg2, comment, output_file):
     output_file.write('\t{} {}(%{}), %{} #{}\n'.format(opcode, offset, reg1, reg2, comment))
 
+def gen_reg_indirect(opcode, reg1, offset, reg2, comment, output_file):
+    output_file.write('\t{} %{}, {}(%{}) #{}\n'.format(opcode, reg1, offset, reg2, comment))
+
 def gen_no_operands(opcode, comment, output_file):
     output_file.write('\t{} #{}\n'.format(opcode, comment))
 
@@ -129,12 +153,26 @@ def gen_code_statement(statement, output_file):
 def gen_code_expression(expression, output_file):
     if expression.kind == NodeType.NUM_EXP:
         gen_immediate_reg('movl', expression.number, ACC_32, 'put integer value into accumulator', output_file)
+
     elif expression.kind == NodeType.STR_EXP: 
         gen_immediate_reg('movq', expression.string, ACC_64, 'put write statement string value into accumulator', output_file)
+
     elif expression.kind == NodeType.MATH_EXP:
         gen_code_expression(expression.left, output_file)
         gen_reg('push', ACC_64, 'push the value of the left side of arithmetic expression onto the stack', output_file)
         gen_code_expression(expression.right, output_file)
+
         if expression.token.kind == TokenType.T_PLUS:
             gen_indirect_reg('addl', 0, SP, ACC_32, 'add the left side of the arithmetic expression to the right side', output_file)
+
+        elif expression.token.kind == TokenType.T_MINUS:
+            gen_reg_indirect('sub', ACC_32, 0, SP, 'subtract the right side of the arithmetic expression from the left side', output_file)
+            gen_indirect_reg('movl', 0, SP, ACC_32, 'put the result of the subtraction into the accumulator', output_file)
+
+        elif expression.token.kind == TokenType.T_MULT:
+            gen_indirect_reg('imul', 0, SP, ACC_32, 'multiply the left side of the arithmetic expression by the right side', output_file)
+
+        elif expression.token.kind == TokenType.T_DIV:
+            pass
+
         gen_immediate_reg('addq', 8, SP, 'pop the left side of the arithmetic expression off of the stack', output_file)
