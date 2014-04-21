@@ -1,3 +1,3 @@
 void main(void) {
-    write(1+1);
+    write(100-2);
 }

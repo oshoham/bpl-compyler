@@ -173,7 +173,7 @@ def gen_code_expression(expression, output_file):
             gen_indirect_reg('imul', 0, SP, ACC_32, 'multiply the left side of the arithmetic expression by the right side', output_file)
 
         elif expression.token.kind in (TokenType.T_DIV, TokenType.T_MOD):
-            gen_reg('push', CALLEE_SAVED_2_32, 'save the value in the %ebp register on the stack', output_file)
+            gen_reg('push', CALLEE_SAVED_2_64, 'save the value in the %ebp register on the stack', output_file)
             gen_reg_reg('movl', ACC_32, CALLEE_SAVED_2_32, 'put the divisor into the %ebp register', output_file)
             gen_indirect_reg('movl', 8, SP, ACC_32, 'put the dividend into the accumulator', output_file)
             gen_no_operands('cltq', 'sign-extend dividend to rax', output_file)
@@ -183,5 +183,7 @@ def gen_code_expression(expression, output_file):
             if expression.token.kind == TokenType.T_MOD:
                 # place the remainder into the accumulator instead of the quotient
                 gen_reg_reg('movl', ARG3_32, ACC_32, 'put the remainder into the accumulator', output_file)
+
+            gen_reg('pop', CALLEE_SAVED_2_64, 'restore %ebp\'s original value', output_file)
 
         gen_immediate_reg('addq', 8, SP, 'pop the left side of the arithmetic expression off of the stack', output_file)
