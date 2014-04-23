@@ -5,6 +5,7 @@ DATE: 4/9/2014
 
 from bpl.parser.parsetree import *
 from bpl.scanner.token import TokenType
+from itertools import count
 
 # Register names
 SP = 'rsp'
@@ -35,6 +36,12 @@ CALLEE_SAVED_5_64 = 'r14'
 CALLEE_SAVED_5_32 = 'r14d'
 CALLEE_SAVED_6_64 = 'r15'
 CALLEE_SAVED_6_32 = 'r15d'
+
+# infinite label generator
+labels = count()
+next_label = lambda : '.L{}'.format(next(labels))
+
+string_table = {}
 
 def generate_code(type_checked_parse_tree, output_file):
     compute_offsets(type_checked_parse_tree)
@@ -150,28 +157,48 @@ def gen_code_statement(statement, output_file):
         elif statement.expression.kind == NodeType.STR_EXP:
             pass
 
+    elif statement.kind == NodeType.IF_STATEMENT:
+        continue_label = next_label()
+        gen_code_expression(statement.condition, output_file)
+        if statement.else_statement is not None:
+            else_label = next_label()
+            # generate jump to else if false code
+        else:
+            # generate jump if false code
+        gen_code_statement(statement.statement, output_file)
+        if statement.else_statement is not None:
+            gen_direct('jmp', continue_label, 'jump to the end of the if statement code', output_file)
+            output_file.write('{}:\n'.format(else_label))
+            gen_code_statement(statement.else_statement, output_file)
+        output_file.write('{}:\n'.format(continue_label))
+
 def gen_code_expression(expression, output_file):
     if expression.kind == NodeType.NUM_EXP:
         gen_immediate_reg('movl', expression.number, ACC_32, 'put an integer value into the accumulator', output_file)
 
     elif expression.kind == NodeType.STR_EXP: 
-        gen_immediate_reg('movq', expression.string, ACC_64, 'put a string value into the accumulator', output_file)
+        #gen_immediate_reg('movq', expression.string, ACC_64, 'put a string value into the accumulator', output_file)
 
+    # generate code for arithmetic expressions
     elif expression.kind == NodeType.MATH_EXP:
         gen_code_expression(expression.left, output_file)
         gen_reg('push', ACC_64, 'push the value of the left side of arithmetic expression onto the stack', output_file)
         gen_code_expression(expression.right, output_file)
 
+        # addition
         if expression.token.kind == TokenType.T_PLUS:
             gen_indirect_reg('addl', 0, SP, ACC_32, 'add the left side of the arithmetic expression to the right side', output_file)
 
+        # subtraction
         elif expression.token.kind == TokenType.T_MINUS:
             gen_reg_indirect('sub', ACC_32, 0, SP, 'subtract the right side of the arithmetic expression from the left side', output_file)
             gen_indirect_reg('movl', 0, SP, ACC_32, 'put the result of the subtraction into the accumulator', output_file)
 
+        # multiplication
         elif expression.token.kind == TokenType.T_MULT:
             gen_indirect_reg('imul', 0, SP, ACC_32, 'multiply the left side of the arithmetic expression by the right side', output_file)
 
+        # division
         elif expression.token.kind in (TokenType.T_DIV, TokenType.T_MOD):
             gen_reg('push', CALLEE_SAVED_2_64, 'save the value in the %ebp register on the stack', output_file)
             gen_reg_reg('movl', ACC_32, CALLEE_SAVED_2_32, 'put the divisor into the %ebp register', output_file)
@@ -187,3 +214,43 @@ def gen_code_expression(expression, output_file):
             gen_reg('pop', CALLEE_SAVED_2_64, 'restore %ebp\'s original value', output_file)
 
         gen_immediate_reg('addq', 8, SP, 'pop the left side of the arithmetic expression off of the stack', output_file)
+
+    # generate code for comparison expressions
+    elif expression.kind == NodeType.COMP_EXP:
+        gen_code_expression(expression.left, output_file)
+        gen_reg('push', ACC_64, 'push the value of the left side of the comparison expression onto the stack', output_file)
+        gen_code_expression(expression.right, output_file)
+        gen_indirect_reg('cmpl', 0, SP, ACC_32, 'compare the two sides of the comparison expression', output_file)
+
+        false_label = next_label()
+        true_label = next_label()
+
+        # less than
+        if expression.token.kind == TokenType.T_LESS:
+            gen_direct('jle', false_label, 'jump to false label if right side of expression is less than or equal to left side'.format(false_label), output_file)
+
+        # less than or equal
+        elif expression.token.kind == TokenType.T_LEQ:
+            gen_direct('jl', false_label, 'jump to false label if right side of expression is less than left side'.format(false_label), output_file)
+
+        # equal
+        elif expression.token.kind == TokenType.T_EQ:
+            gen_direct('jne', false_label, 'jump to false label if right side of expression is not equal to left side'.format(false_label), output_file)
+
+        # not equal
+        elif expression.token.kind == TokenType.T_NEQ:
+            gen_direct('je', false_label, 'jump to false label if right side of expression is equal to left side'.format(false_label), output_file)
+
+        # greater than or equal
+        elif expression.token.kind == TokenType.T_GEQ:
+            gen_direct('jg', false_label, 'jump to false label if right side of expression is greater than left side'.format(false_label), output_file)
+
+        # greater than
+        elif expression.token.kind == TokenType.T_GREATER:
+            gen_direct('jge', false_label, 'jump to false label if right side of expression is greater than or equal to left side'.format(false_label), output_file)
+
+        gen_immediate_reg('movl', 1, ACC_32, 'put a non-zero value into the accumulator to indicate that the comparison was true', output_file)
+        gen_direct('jmp', true_label, 'skip over code at false label', output_file)
+        output_file.write('{}:\n'.format(false_label))
+        gen_immediate_reg('movl', 0, ACC_32, 'put zero into the accumulator to indicate that the comparison was false', output_file)
+        output_file.write('{}:\n'.format(true_label))
