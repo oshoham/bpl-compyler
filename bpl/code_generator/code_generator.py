@@ -160,16 +160,19 @@ def gen_code_statement(statement, output_file):
     elif statement.kind == NodeType.IF_STATEMENT:
         continue_label = next_label()
         gen_code_expression(statement.condition, output_file)
+        gen_immediate_reg('cmpl', 0, ACC_32, 'check whether the if condition evaluates to true or false', output_file)
         if statement.else_statement is not None:
             else_label = next_label()
             # generate jump to else if false code
-        else:
-            # generate jump if false code
-        gen_code_statement(statement.statement, output_file)
-        if statement.else_statement is not None:
+            gen_direct('je', else_label, 'jump to else statement code if condition evaluates to false', output_file)
+            gen_code_statement(statement.statement, output_file)
             gen_direct('jmp', continue_label, 'jump to the end of the if statement code', output_file)
             output_file.write('{}:\n'.format(else_label))
             gen_code_statement(statement.else_statement, output_file)
+        else:
+            # generate jump if true code
+            gen_direct('jne', continue_label, 'jump over if statement code if condition evaluates to false', output_file)
+            gen_code_statement(statement.statement, output_file)
         output_file.write('{}:\n'.format(continue_label))
 
 def gen_code_expression(expression, output_file):
