@@ -171,7 +171,7 @@ def gen_code_statement(statement, output_file):
             gen_code_statement(statement.else_statement, output_file)
         else:
             # generate jump if true code
-            gen_direct('jne', continue_label, 'jump over if statement code if condition evaluates to false', output_file)
+            gen_direct('je', continue_label, 'jump over if statement code if condition evaluates to false', output_file)
             gen_code_statement(statement.statement, output_file)
         output_file.write('{}:\n'.format(continue_label))
 
@@ -258,3 +258,4 @@ def gen_code_expression(expression, output_file):
         output_file.write('{}:\n'.format(false_label))
         gen_immediate_reg('movl', 0, ACC_32, 'put zero into the accumulator to indicate that the comparison was false', output_file)
         output_file.write('{}:\n'.format(true_label))
+        gen_immediate_reg('addq', 8, SP, 'pop the left side of the comparison expression off of the stack', output_file)
