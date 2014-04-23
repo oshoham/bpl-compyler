@@ -1,3 +1,5 @@
 void main(void) {
-    write(100-2);
+    if (4 < 5) {
+        write(100-2);
+    }
 }

@@ -181,6 +181,7 @@ def gen_code_expression(expression, output_file):
 
     elif expression.kind == NodeType.STR_EXP: 
         #gen_immediate_reg('movq', expression.string, ACC_64, 'put a string value into the accumulator', output_file)
+        pass
 
     # generate code for arithmetic expressions
     elif expression.kind == NodeType.MATH_EXP:
