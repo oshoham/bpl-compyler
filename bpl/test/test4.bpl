@@ -1,8 +1,7 @@
+int f(int x) {
+    return 2+3;
+}
+
 void main(void) {
-    if (5 < 5) {
-        write(100-2);
-    }
-    else {
-        write(5);
-    }
+    write(f(34));
 }

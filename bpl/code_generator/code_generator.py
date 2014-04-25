@@ -44,6 +44,7 @@ next_label = lambda : '.L{}'.format(next(labels))
 string_table = {}
 
 def generate_code(type_checked_parse_tree, output_file):
+    """Top-level code generation function."""
     compute_offsets(type_checked_parse_tree)
     gen_header(type_checked_parse_tree, output_file)
 
@@ -54,6 +55,7 @@ def generate_code(type_checked_parse_tree, output_file):
         declaration = declaration.next_node
 
 def compute_offsets(parse_tree):
+    """Walks through the top-level declarations in parse_tree, computing stack pointer offsets for function parameters and local variables."""
     declaration = parse_tree 
     while declaration is not None:
         if declaration.kind == NodeType.FUN_DEC:
@@ -67,6 +69,7 @@ def compute_offsets(parse_tree):
         declaration = declaration.next_node
 
 def compute_offsets_statement(statement, offset):
+    """Computes stack pointer offsets for local variable declarations and updates parse tree statement node fields appropriately."""
     if statement.kind == NodeType.CMPND_STATEMENT:
         dec = statement.local_declarations
         while dec is not None:
@@ -175,6 +178,12 @@ def gen_code_statement(statement, output_file):
             gen_code_statement(statement.statement, output_file)
         output_file.write('{}:\n'.format(continue_label))
 
+    # generate code for return statements
+    elif statement.kind == NodeType.RETURN_STATEMENT:
+        # move the return value into the accumulator
+        gen_code_expression(statement.expression, output_file)
+        gen_no_operands('ret', 'return from the current function', output_file)
+
 def gen_code_expression(expression, output_file):
     if expression.kind == NodeType.NUM_EXP:
         gen_immediate_reg('movl', expression.number, ACC_32, 'put an integer value into the accumulator', output_file)
@@ -259,3 +268,21 @@ def gen_code_expression(expression, output_file):
         gen_immediate_reg('movl', 0, ACC_32, 'put zero into the accumulator to indicate that the comparison was false', output_file)
         output_file.write('{}:\n'.format(true_label))
         gen_immediate_reg('addq', 8, SP, 'pop the left side of the comparison expression off of the stack', output_file)
+
+    # generate code for function calls
+    elif expression.kind == NodeType.FUN_CALL_EXP:
+        args = []
+        arg = expression.arguments
+        num_args = 0
+        while arg is not None:
+            args.append(arg)
+            arg = arg.next_node
+            num_args += 1
+        # push the function arguments onto the stack in reverse order
+        while len(args) != 0:
+            gen_code_expression(args.pop(), output_file)
+            gen_reg('push', ACC_64, 'push the function argument onto the stack', output_file)
+        gen_reg('push', FP, 'push the frame pointer onto the stack', output_file)
+        gen_direct('call', expression.name, 'call function {}'.format(expression.name), output_file)
+        gen_reg('pop', FP, 'restore the frame pointer', output_file)
+        gen_immediate_reg('addq', num_args*8, SP, 'pop the function arguments off of the stack', output_file)
