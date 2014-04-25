@@ -210,6 +210,8 @@ def type_check_statement(statement, return_type, debug):
 
     elif statement.kind is NodeType.WRITE_STATEMENT:
         type_check_expression(statement.expression, debug)
+        if statement.expression.type_string not in ('int', 'string'):
+            raise TypeCheckerException(statement.line_number, 'Cannot write an expression of type "{}".'.format(statement.expression.type_string))
 
     elif statement.kind is NodeType.WRITELN_STATEMENT:
         pass

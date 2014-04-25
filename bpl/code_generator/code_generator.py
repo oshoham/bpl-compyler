@@ -150,14 +150,14 @@ def gen_code_statement(statement, output_file):
             gen_code_statement(stmnt, output_file)
             stmnt = stmnt.next_node
         
-    if statement.kind == NodeType.WRITE_STATEMENT:
+    elif statement.kind == NodeType.WRITE_STATEMENT:
         gen_code_expression(statement.expression, output_file)
-        if statement.expression.kind in (NodeType.NUM_EXP, NodeType.MATH_EXP):
+        if statement.expression.type_string == 'int':
             gen_reg_reg('movl', ACC_32, ARG2_32, 'integer value to print = arg2', output_file)
             gen_immediate_reg('movq', '.WriteIntString', ARG1_64, 'printf integer formatting string = arg1', output_file)
             gen_immediate_reg('movl', 0, ACC_32, 'clear the return value', output_file)
             gen_direct('call', 'printf', 'call the C-lib printf function', output_file)
-        elif statement.expression.kind == NodeType.STR_EXP:
+        elif statement.expression.type_string == 'string':
             pass
 
     elif statement.kind == NodeType.IF_STATEMENT:
