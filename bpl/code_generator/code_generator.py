@@ -160,6 +160,11 @@ def gen_code_statement(statement, output_file):
         elif statement.expression.type_string == 'string':
             pass
 
+    elif statement.kind == NodeType.WRITELN_STATEMENT:
+        gen_immediate_reg('movq', '.WritelnString', ARG1_64, 'printf newline string = arg1', output_file)
+        gen_immediate_reg('movl', 0, ACC_32, 'clear the return value', output_file)
+        gen_direct('call', 'printf', 'call the C-lib printf function', output_file)
+
     elif statement.kind == NodeType.IF_STATEMENT:
         continue_label = next_label()
         gen_code_expression(statement.condition, output_file)
