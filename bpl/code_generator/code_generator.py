@@ -345,3 +345,4 @@ def gen_code_expression(expression, output_file):
         gen_code_expression(expression.right, output_file)
         gen_indirect_reg('movq', 0, SP, ARG2_64, 'put the address of the left side of the assignment expression into %rsi', output_file)
         gen_reg_indirect('movq', ACC_64, 0, ARG2_64, 'perform the assignment', output_file)
+        gen_immediate_reg('addq', 8, SP, 'pop the left side of the assignment expression off of the stack', output_file)
