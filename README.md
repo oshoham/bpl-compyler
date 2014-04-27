@@ -8,10 +8,10 @@ Written in Python 2.7.6. Compiles to GAS instructions.
 ### Structure
 
 The compiler consists of 4 modules: 
-    1) a lexical scanner that tokenizes text files
-    2) a recursive descent parser that constructs abstract syntax trees from token streams
-    3) a type checker that traverses abstract syntax trees to catch type errors
-    4) a code generator that converts type-correct ASTs to GNU AS instructions.
+    1. a lexical scanner that tokenizes text files
+    2. a recursive descent parser that constructs abstract syntax trees from token streams
+    3. a type checker that traverses abstract syntax trees to catch type errors
+    4. a code generator that converts type-correct ASTs to GNU AS instructions.
 
 The code is organized as follows:
 
@@ -47,7 +47,7 @@ The code is organized as follows:
             ├── type_checker_test.py
             └── code_generator_test.py
 
-(credit to @daf- for this diagram and the structure of this README)
+(credit to [@daf-](https://github.com/daf-/) for this diagram and the structure of this README)
 
 ### Running the Compiler
 
