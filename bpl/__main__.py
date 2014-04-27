@@ -12,7 +12,7 @@ if __name__ == "__main__":
         print "Error: Not enough arguments supplied to bpl main module."
         sys.exit()
     if not file_name.endswith('.bpl'):
-        print "Error: File does not have a .bpl extension!"
+        print "Error: File name does not have a .bpl extension!"
         sys.exit()
     try:
         input_file = open(file_name)
