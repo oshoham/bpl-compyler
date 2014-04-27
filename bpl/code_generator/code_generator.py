@@ -114,6 +114,9 @@ def gen_indirect_reg(opcode, offset, reg1, reg2, comment, output_file):
 def gen_reg_indirect(opcode, reg1, offset, reg2, comment, output_file):
     output_file.write('\t{} %{}, {}(%{}) #{}\n'.format(opcode, reg1, offset, reg2, comment))
 
+def gen_immediate_indirect(opcode, immediate, offset, reg, comment, output_file):
+    output_file.write('\t{} ${}, {}(%{}) #{}\n'.format(opcode, immediate, offset, reg, comment))
+
 def gen_no_operands(opcode, comment, output_file):
     output_file.write('\t{} #{}\n'.format(opcode, comment))
 
@@ -124,6 +127,17 @@ def gen_reg(opcode, reg, comment, output_file):
     output_file.write('\t{} %{} #{}\n'.format(opcode, reg, comment))
 
 def gen_header(parse_tree, output_file):
+    # allocate global variables and arrays
+    declaration = parse_tree
+    while declaration is not None:
+        # allocate space for a single variable
+        if declaration.kind == NodeType.VAR_DEC:
+            output_file.write('.comm {}, {}, {}\n'.format(declaration.name, 8, 32))
+        # allocate space for an array
+        elif declaration.kind == NodeType.ARRAY_DEC:
+            output_file.write('.comm {}, {}, {}\n'.format(declaration.name, 8 * declaration.size, 32))
+        declaration = declaration.next_node
+
     output_file.write('.section .rodata\n')
     output_file.write('.WriteIntString: .string "%d "\n')
     output_file.write('.WritelnString: .string "\\n"\n')
@@ -188,6 +202,9 @@ def gen_code_statement(statement, output_file):
         # move the return value into the accumulator
         gen_code_expression(statement.expression, output_file)
         gen_no_operands('ret', 'return from the current function', output_file)
+
+    elif statement.kind == NodeType.EXP_STATEMENT:
+        gen_code_expression(statement.expression, output_file)
 
 def gen_code_expression(expression, output_file):
     if expression.kind == NodeType.NUM_EXP:
@@ -291,3 +308,33 @@ def gen_code_expression(expression, output_file):
         gen_direct('call', expression.name, 'call function {}'.format(expression.name), output_file)
         gen_reg('pop', FP, 'restore the frame pointer', output_file)
         gen_immediate_reg('addq', num_args*8, SP, 'pop the function arguments off of the stack', output_file)
+
+    # generate code for variable references
+    elif expression.kind == NodeType.VAR_EXP:
+        # if the variable is local
+        if expression.declaration.offset is not None:
+            gen_reg_reg('movq', FP, ACC_64, 'move the frame pointer into the accumulator', output_file)
+            gen_immediate_reg('addq', expression.declaration.offset, ACC_64, 'update the accumulator to contain the address of the local variable "{}"'.format(expression.name), output_file)
+        else: # the variable is global
+            gen_immediate_reg('movq', expression.name, ACC_64, 'move the address of the global variable\'s label into the accumulator', output_file)
+        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the variable into the accumulator', output_file)
+
+    # generate code for assignment expressions
+    elif expression.kind == NodeType.ASSIGN_EXP:
+
+        # move the address of the left side of the assignment expression into the accumulator
+        if expression.left.kind == NodeType.VAR_EXP:
+            if expression.left.declaration.offset is not None:
+                gen_reg_reg('movq', FP, ACC_64, 'move the frame pointer into the accumulator', output_file)
+                gen_immediate_reg('addq', expression.left.declaration.offset, ACC_64, 'update the accumulator to contain the address of the local variable "{}"'.format(expression.left.name), output_file)
+            else: # the variable is global
+                gen_immediate_reg('movq', expression.left.name, ACC_64, 'move the address of the global variable\'s label into the accumulator', output_file)
+        elif expression.left.kind == NodeType.ARRAY_EXP:
+            pass
+        else: # expression.left.kind == NodeType.DEREF_EXP
+            pass
+
+        gen_reg('push', ACC_64, 'push the address of the left side of the assignment expression onto the stack', output_file)
+        gen_code_expression(expression.right, output_file)
+        gen_indirect_reg('movq', 0, SP, ARG2_64, 'put the address of the left side of the assignment expression into %rsi', output_file)
+        gen_immediate_indirect('movl', ACC_64, 0, ARG2_64, 'perform the assignment', output_file)

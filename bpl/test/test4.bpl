@@ -1,5 +1,6 @@
 int f(int x) {
-    return 2+3;
+    x = 5;
+    return x;
 }
 
 void main(void) {
