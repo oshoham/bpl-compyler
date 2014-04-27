@@ -152,16 +152,16 @@ def gen_code_function(function, output_file):
     gen_reg_reg('movq', SP, FP, 'set up the frame pointer', output_file)
     gen_immediate_reg('sub', function.local_var_offset, SP, 'allocate local variables', output_file)
     # generate function body code
-    gen_code_statement(function.body, output_file)
+    gen_code_statement(function.body, function.local_var_offset, output_file)
     gen_immediate_reg('add', function.local_var_offset, SP, 'deallocate local variables', output_file)
     gen_no_operands('ret', 'return from function "{}"'.format(function.name), output_file)
 
-def gen_code_statement(statement, output_file):
+def gen_code_statement(statement, local_var_offset, output_file):
     # generate code for compound statements
     if statement.kind == NodeType.CMPND_STATEMENT:
         stmnt = statement.statements
         while stmnt is not None:
-            gen_code_statement(stmnt, output_file)
+            gen_code_statement(stmnt, local_var_offset, output_file)
             stmnt = stmnt.next_node
         
     # generate code for write statements
@@ -191,14 +191,14 @@ def gen_code_statement(statement, output_file):
             else_label = next_label()
             # generate jump to else if false code
             gen_direct('je', else_label, 'jump to else statement code if condition evaluates to false', output_file)
-            gen_code_statement(statement.statement, output_file)
+            gen_code_statement(statement.statement, local_var_offset, output_file)
             gen_direct('jmp', continue_label, 'jump to the end of the if statement code', output_file)
             output_file.write('{}:\n'.format(else_label))
-            gen_code_statement(statement.else_statement, output_file)
+            gen_code_statement(statement.else_statement, local_var_offset, output_file)
         else:
             # generate jump if true code
             gen_direct('je', continue_label, 'jump over if statement code if condition evaluates to false', output_file)
-            gen_code_statement(statement.statement, output_file)
+            gen_code_statement(statement.statement, local_var_offset, output_file)
         output_file.write('{}:\n'.format(continue_label))
 
     # generate code for return statements
@@ -206,6 +206,7 @@ def gen_code_statement(statement, output_file):
         # move the return value into the accumulator
         if statement.expression is not None:
             gen_code_expression(statement.expression, output_file)
+        gen_immediate_reg('add', local_var_offset, SP, 'deallocate local variables', output_file)
         gen_no_operands('ret', 'return from the current function', output_file)
 
     # generate code for expression statements
