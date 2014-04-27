@@ -1,11 +1,11 @@
-int y;
+int A[10];
 
-int f(int x) {
-    y = 5;
-    return x;
+int f(int x[]) {
+    int y;
+    return 5;
 }
 
 void main(void) {
-    f(34);
-    write(y);
+    A[1] = 3;
+    write(A[1]);
 }

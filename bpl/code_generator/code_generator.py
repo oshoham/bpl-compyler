@@ -65,7 +65,7 @@ def compute_offsets(parse_tree):
                 parameter_offset += 8
                 param.offset = parameter_offset
                 param = param.next_node
-            declaration.local_var_offset = compute_offsets_statement(declaration.body, 0)
+            declaration.local_var_offset = -1 * compute_offsets_statement(declaration.body, 0)
         declaration = declaration.next_node
 
 def compute_offsets_statement(statement, offset):
@@ -329,7 +329,7 @@ def gen_code_expression(expression, output_file):
     # generate code for array reference expressions
     elif expression.kind == NodeType.ARRAY_EXP:
         gen_code_expression(expression.expression, output_file)
-        gen_reg_reg('movl', ACC_32, ARG2_32, 'temporarily store the value of the array indexing expression in %esi' output_file)
+        gen_reg_reg('movl', ACC_32, ARG2_32, 'temporarily store the value of the array indexing expression in %esi', output_file)
         gen_immediate_reg('imul', 8, ARG2_32, 'convert the array index to an offset', output_file)
 
         # if the array is local
@@ -354,16 +354,16 @@ def gen_code_expression(expression, output_file):
                 gen_immediate_reg('movq', expression.left.name, ACC_64, 'move the address of the global variable\'s label into the accumulator', output_file)
 
         elif expression.left.kind == NodeType.ARRAY_EXP:
-            gen_code_expression(expression.expression, output_file)
-            gen_reg_reg('movl', ACC_32, ARG2_32, 'temporarily store the value of the array indexing expression in %esi' output_file)
+            gen_code_expression(expression.left.expression, output_file)
+            gen_reg_reg('movl', ACC_32, ARG2_32, 'temporarily store the value of the array indexing expression %esi', output_file)
             gen_immediate_reg('imul', 8, ARG2_32, 'convert the array index to an offset', output_file)
 
             # if the array is local
-            if expression.declaration.offset is not None:
+            if expression.left.declaration.offset is not None:
                 gen_reg_reg('movq', FP, ACC_64, 'move the frame pointer into the accumulator', output_file)
-                gen_immediate_reg('addq', expression.declaration.offset, ACC_64, 'update the accumulator to contain the address of the local array "{}"'.format(expression.name), output_file)
+                gen_immediate_reg('addq', expression.left.declaration.offset, ACC_64, 'update the accumulator to contain the address of the local array "{}"'.format(expression.left.name), output_file)
             else: # the array is global
-                gen_immediate_reg('movq', expression.name, ACC_64, 'move the address of the global array\'s label into the accumulator', output_file)
+                gen_immediate_reg('movq', expression.left.name, ACC_64, 'move the address of the global array\'s label into the accumulator', output_file)
             gen_reg_reg('addq', ARG2_64, ACC_64, 'add the array index (as an offset) to the address of the first element of the array', output_file)
 
         else: # expression.left.kind == NodeType.DEREF_EXP
