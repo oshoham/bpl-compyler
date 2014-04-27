@@ -1,15 +1,29 @@
-#!/bin/sh
+#!/usr/bin/env python
+import argparse, os, subprocess
 
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 BPL_FILE" >&2
-    exit 1
-fi
-if ! [ -e $1 ]; then
-    echo "$1 not found!" >&2
-    exit 1
-fi
+# handle command-line arguments and flags
+parser = argparse.ArgumentParser()
+parser.add_argument('FILE', help='a .bpl file')
+parser.add_argument('-s', '--assembly-file', help='stop compilation at assembly generation', action='store_true')
+parser.add_argument('-o', '--output-file', help='write output to file')
+args = parser.parse_args()
 
-BASENAME=`echo $1 | sed 's/\.[^\.]*$//'`
-ASSEMBLY="$BASENAME.s"
-python -m bpl $1
-gcc $ASSEMBLY -o $BASENAME
+# default output file and assembly file names
+output_file_name = 'a.out'
+assembly_file_name = os.path.basename(args.FILE).rstrip('.bpl') + '.s'
+
+# if an output file name is specified:
+if args.output_file:
+    # use args.output_file as the output file name
+    output_file_name = args.output_file
+    # if we are only generating assembly, use args.output_file as the assembly file name
+    if args.assembly_file:
+        assembly_file_name = args.output_file
+# generate the assembly file using the bpl package
+subprocess.call(['python', '-m', 'bpl', args.FILE, assembly_file_name])
+# if we are generating a binary file as well as assembly:
+if not args.assembly_file:
+    # generate the binary file
+    subprocess.call(['gcc', assembly_file_name, '-o', output_file_name])
+    # clean up the assembly file
+    subprocess.call(['rm', assembly_file_name])
