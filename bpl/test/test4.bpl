@@ -1,8 +1,11 @@
 int f(int x) {
-    x = 5;
+    y = 5;
     return x;
 }
 
+int y;
+
 void main(void) {
-    write(f(34));
+    f(34);
+    write(y);
 }
