@@ -157,13 +157,14 @@ def gen_code_function(function, output_file):
     gen_no_operands('ret', 'return from function "{}"'.format(function.name), output_file)
 
 def gen_code_statement(statement, output_file):
+    # generate code for compound statements
     if statement.kind == NodeType.CMPND_STATEMENT:
-        # do some other stuff
         stmnt = statement.statements
         while stmnt is not None:
             gen_code_statement(stmnt, output_file)
             stmnt = stmnt.next_node
         
+    # generate code for write statements
     elif statement.kind == NodeType.WRITE_STATEMENT:
         gen_code_expression(statement.expression, output_file)
         if statement.expression.type_string == 'int':
@@ -174,12 +175,15 @@ def gen_code_statement(statement, output_file):
         elif statement.expression.type_string == 'string':
             pass
 
+    # generate code for writeln statements
     elif statement.kind == NodeType.WRITELN_STATEMENT:
         gen_immediate_reg('movq', '.WritelnString', ARG1_64, 'printf newline string = arg1', output_file)
         gen_immediate_reg('movl', 0, ACC_32, 'clear the return value', output_file)
         gen_direct('call', 'printf', 'call the C-lib printf function', output_file)
 
+    # generate code for if statements
     elif statement.kind == NodeType.IF_STATEMENT:
+        # create a label for the code that should be executed regardless of the condition's value
         continue_label = next_label()
         gen_code_expression(statement.condition, output_file)
         gen_immediate_reg('cmpl', 0, ACC_32, 'check whether the if condition evaluates to true or false', output_file)
@@ -200,9 +204,11 @@ def gen_code_statement(statement, output_file):
     # generate code for return statements
     elif statement.kind == NodeType.RETURN_STATEMENT:
         # move the return value into the accumulator
-        gen_code_expression(statement.expression, output_file)
+        if statement.expression is not None:
+            gen_code_expression(statement.expression, output_file)
         gen_no_operands('ret', 'return from the current function', output_file)
 
+    # generate code for expression statements
     elif statement.kind == NodeType.EXP_STATEMENT:
         gen_code_expression(statement.expression, output_file)
 
@@ -337,4 +343,4 @@ def gen_code_expression(expression, output_file):
         gen_reg('push', ACC_64, 'push the address of the left side of the assignment expression onto the stack', output_file)
         gen_code_expression(expression.right, output_file)
         gen_indirect_reg('movq', 0, SP, ARG2_64, 'put the address of the left side of the assignment expression into %rsi', output_file)
-        gen_immediate_indirect('movl', ACC_64, 0, ARG2_64, 'perform the assignment', output_file)
+        gen_reg_indirect('movq', ACC_64, 0, ARG2_64, 'perform the assignment', output_file)
