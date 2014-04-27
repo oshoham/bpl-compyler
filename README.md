@@ -18,6 +18,7 @@ The code is organized as follows:
 
     .                           # top-level directory.  Run tests from here!
     ├── README.md
+    ├── bplc                    # bpl compilation script. Use this to compile .bpl files!
     └── bpl                     # bpl python package
         ├── __init__.py
         ├── __main__.py         # main module for bpl package
