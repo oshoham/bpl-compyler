@@ -318,18 +318,38 @@ def gen_code_expression(expression, output_file):
 
     # generate code for variable references
     elif expression.kind == NodeType.VAR_EXP:
-        # if the variable is local
+        # move the address of the variable into the accumulator   
+        gen_l_value(expression, output_file)
+        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the variable into the accumulator', output_file)
+
+    # generate code for array reference expressions
+    elif expression.kind == NodeType.ARRAY_EXP:
+        # move the address of the array cell at the appropriate index into the accumulator
+        gen_l_value(expression, output_file)
+        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the array cell into the accumulator', output_file)
+
+    # generate code for assignment expressions
+    elif expression.kind == NodeType.ASSIGN_EXP:
+
+        # move the address of the left side of the assignment expression into the accumulator
+        gen_l_value(expression.left, output_file)
+        gen_reg('push', ACC_64, 'push the address of the left side of the assignment expression onto the stack', output_file)
+        gen_code_expression(expression.right, output_file)
+        gen_indirect_reg('movq', 0, SP, ARG2_64, 'put the address of the left side of the assignment expression into %rsi', output_file)
+        gen_reg_indirect('movq', ACC_64, 0, ARG2_64, 'perform the assignment', output_file)
+        gen_immediate_reg('addq', 8, SP, 'pop the left side of the assignment expression off of the stack', output_file)
+
+def gen_l_value(expression, output_file):
+    if expression.kind == NodeType.VAR_EXP:
         if expression.declaration.offset is not None:
             gen_reg_reg('movq', FP, ACC_64, 'move the frame pointer into the accumulator', output_file)
             gen_immediate_reg('addq', expression.declaration.offset, ACC_64, 'update the accumulator to contain the address of the local variable "{}"'.format(expression.name), output_file)
         else: # the variable is global
             gen_immediate_reg('movq', expression.name, ACC_64, 'move the address of the global variable\'s label into the accumulator', output_file)
-        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the variable into the accumulator', output_file)
 
-    # generate code for array reference expressions
     elif expression.kind == NodeType.ARRAY_EXP:
         gen_code_expression(expression.expression, output_file)
-        gen_reg_reg('movl', ACC_32, ARG2_32, 'temporarily store the value of the array indexing expression in %esi', output_file)
+        gen_reg_reg('movl', ACC_32, ARG2_32, 'temporarily store the value of the array indexing expression %esi', output_file)
         gen_immediate_reg('imul', 8, ARG2_32, 'convert the array index to an offset', output_file)
 
         # if the array is local
@@ -339,38 +359,6 @@ def gen_code_expression(expression, output_file):
         else: # the array is global
             gen_immediate_reg('movq', expression.name, ACC_64, 'move the address of the global array\'s label into the accumulator', output_file)
         gen_reg_reg('addq', ARG2_64, ACC_64, 'add the array index (as an offset) to the address of the first element of the array', output_file)
-        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the array cell into the accumulator', output_file)
 
-    # generate code for assignment expressions
-    elif expression.kind == NodeType.ASSIGN_EXP:
-
-        # move the address of the left side of the assignment expression into the accumulator
-
-        if expression.left.kind == NodeType.VAR_EXP:
-            if expression.left.declaration.offset is not None:
-                gen_reg_reg('movq', FP, ACC_64, 'move the frame pointer into the accumulator', output_file)
-                gen_immediate_reg('addq', expression.left.declaration.offset, ACC_64, 'update the accumulator to contain the address of the local variable "{}"'.format(expression.left.name), output_file)
-            else: # the variable is global
-                gen_immediate_reg('movq', expression.left.name, ACC_64, 'move the address of the global variable\'s label into the accumulator', output_file)
-
-        elif expression.left.kind == NodeType.ARRAY_EXP:
-            gen_code_expression(expression.left.expression, output_file)
-            gen_reg_reg('movl', ACC_32, ARG2_32, 'temporarily store the value of the array indexing expression %esi', output_file)
-            gen_immediate_reg('imul', 8, ARG2_32, 'convert the array index to an offset', output_file)
-
-            # if the array is local
-            if expression.left.declaration.offset is not None:
-                gen_reg_reg('movq', FP, ACC_64, 'move the frame pointer into the accumulator', output_file)
-                gen_immediate_reg('addq', expression.left.declaration.offset, ACC_64, 'update the accumulator to contain the address of the local array "{}"'.format(expression.left.name), output_file)
-            else: # the array is global
-                gen_immediate_reg('movq', expression.left.name, ACC_64, 'move the address of the global array\'s label into the accumulator', output_file)
-            gen_reg_reg('addq', ARG2_64, ACC_64, 'add the array index (as an offset) to the address of the first element of the array', output_file)
-
-        else: # expression.left.kind == NodeType.DEREF_EXP
-            pass
-
-        gen_reg('push', ACC_64, 'push the address of the left side of the assignment expression onto the stack', output_file)
-        gen_code_expression(expression.right, output_file)
-        gen_indirect_reg('movq', 0, SP, ARG2_64, 'put the address of the left side of the assignment expression into %rsi', output_file)
-        gen_reg_indirect('movq', ACC_64, 0, ARG2_64, 'perform the assignment', output_file)
-        gen_immediate_reg('addq', 8, SP, 'pop the left side of the assignment expression off of the stack', output_file)
+    elif expression.kind == NodeType.DEREF_EXP:
+        pass
