@@ -46,6 +46,7 @@ def generate_code(type_checked_parse_tree, output_file):
     """Top-level code generation function."""
     compute_offsets(type_checked_parse_tree)
 
+    # build a dictionary whose keys are strings and whose values are header labels for those strings
     string_table = {}
     declaration = type_checked_parse_tree
     while declaration is not None:
@@ -58,7 +59,7 @@ def generate_code(type_checked_parse_tree, output_file):
     declaration = type_checked_parse_tree
     while declaration is not None:
         if declaration.kind == NodeType.FUN_DEC:
-            gen_code_function(declaration, output_file)
+            gen_code_function(declaration, string_table, output_file)
         declaration = declaration.next_node
 
 def build_string_table(node):
@@ -203,26 +204,26 @@ def gen_header(parse_tree, string_table, output_file):
     output_file.write('.text\n')
     output_file.write('.globl main\n')
 
-def gen_code_function(function, output_file):
+def gen_code_function(function, string_table, output_file):
     output_file.write(function.name + ':\n')
     gen_reg_reg('movq', SP, FP, 'set up the frame pointer', output_file)
     gen_immediate_reg('sub', function.local_var_offset, SP, 'allocate local variables', output_file)
     # generate function body code
-    gen_code_statement(function.body, function.local_var_offset, output_file)
+    gen_code_statement(function.body, function.local_var_offset, string_table, output_file)
     gen_immediate_reg('add', function.local_var_offset, SP, 'deallocate local variables', output_file)
     gen_no_operands('ret', 'return from function "{}"'.format(function.name), output_file)
 
-def gen_code_statement(statement, local_var_offset, output_file):
+def gen_code_statement(statement, local_var_offset, string_table, output_file):
     # generate code for compound statements
     if statement.kind == NodeType.CMPND_STATEMENT:
         stmnt = statement.statements
         while stmnt is not None:
-            gen_code_statement(stmnt, local_var_offset, output_file)
+            gen_code_statement(stmnt, local_var_offset, string_table, output_file)
             stmnt = stmnt.next_node
         
     # generate code for write statements
     elif statement.kind == NodeType.WRITE_STATEMENT:
-        gen_code_expression(statement.expression, output_file)
+        gen_code_expression(statement.expression, string_table, output_file)
         if statement.expression.type_string == 'int':
             gen_reg_reg('movl', ACC_32, ARG2_32, 'integer value to print = arg2', output_file)
             gen_immediate_reg('movq', '.WriteIntString', ARG1_64, 'printf integer formatting string = arg1', output_file)
@@ -241,35 +242,35 @@ def gen_code_statement(statement, local_var_offset, output_file):
     elif statement.kind == NodeType.IF_STATEMENT:
         # create a label for the code that should be executed regardless of the condition's value
         continue_label = next_label()
-        gen_code_expression(statement.condition, output_file)
+        gen_code_expression(statement.condition, string_table, output_file)
         gen_immediate_reg('cmpl', 0, ACC_32, 'check whether the if condition evaluates to true or false', output_file)
         if statement.else_statement is not None:
             else_label = next_label()
             # generate jump to else if false code
             gen_direct('je', else_label, 'jump to else statement code if condition evaluates to false', output_file)
-            gen_code_statement(statement.statement, local_var_offset, output_file)
+            gen_code_statement(statement.statement, local_var_offset, string_table, output_file)
             gen_direct('jmp', continue_label, 'jump to the end of the if statement code', output_file)
             output_file.write('{}:\n'.format(else_label))
-            gen_code_statement(statement.else_statement, local_var_offset, output_file)
+            gen_code_statement(statement.else_statement, local_var_offset, string_table, output_file)
         else:
             # generate jump if true code
             gen_direct('je', continue_label, 'jump over if statement code if condition evaluates to false', output_file)
-            gen_code_statement(statement.statement, local_var_offset, output_file)
+            gen_code_statement(statement.statement, local_var_offset, string_table, output_file)
         output_file.write('{}:\n'.format(continue_label))
 
     # generate code for return statements
     elif statement.kind == NodeType.RETURN_STATEMENT:
         # move the return value into the accumulator
         if statement.expression is not None:
-            gen_code_expression(statement.expression, output_file)
+            gen_code_expression(statement.expression, string_table, output_file)
         gen_immediate_reg('add', local_var_offset, SP, 'deallocate local variables', output_file)
         gen_no_operands('ret', 'return from the current function', output_file)
 
     # generate code for expression statements
     elif statement.kind == NodeType.EXP_STATEMENT:
-        gen_code_expression(statement.expression, output_file)
+        gen_code_expression(statement.expression, string_table, output_file)
 
-def gen_code_expression(expression, output_file):
+def gen_code_expression(expression, string_table, output_file):
     if expression.kind == NodeType.NUM_EXP:
         gen_immediate_reg('movl', expression.number, ACC_32, 'put an integer value into the accumulator', output_file)
 
@@ -279,9 +280,9 @@ def gen_code_expression(expression, output_file):
 
     # generate code for arithmetic expressions
     elif expression.kind == NodeType.MATH_EXP:
-        gen_code_expression(expression.left, output_file)
+        gen_code_expression(expression.left, string_table, output_file)
         gen_reg('push', ACC_64, 'push the value of the left side of arithmetic expression onto the stack', output_file)
-        gen_code_expression(expression.right, output_file)
+        gen_code_expression(expression.right, string_table, output_file)
 
         # addition
         if expression.token.kind == TokenType.T_PLUS:
@@ -315,9 +316,9 @@ def gen_code_expression(expression, output_file):
 
     # generate code for comparison expressions
     elif expression.kind == NodeType.COMP_EXP:
-        gen_code_expression(expression.left, output_file)
+        gen_code_expression(expression.left, string_table, output_file)
         gen_reg('push', ACC_64, 'push the value of the left side of the comparison expression onto the stack', output_file)
-        gen_code_expression(expression.right, output_file)
+        gen_code_expression(expression.right, string_table, output_file)
         gen_indirect_reg('cmpl', 0, SP, ACC_32, 'compare the two sides of the comparison expression', output_file)
 
         false_label = next_label()
@@ -365,7 +366,7 @@ def gen_code_expression(expression, output_file):
             num_args += 1
         # push the function arguments onto the stack in reverse order
         while len(args) != 0:
-            gen_code_expression(args.pop(), output_file)
+            gen_code_expression(args.pop(), string_table, output_file)
             gen_reg('push', ACC_64, 'push the function argument onto the stack', output_file)
         gen_reg('push', FP, 'push the frame pointer onto the stack', output_file)
         gen_direct('call', expression.name, 'call function {}'.format(expression.name), output_file)
@@ -375,27 +376,27 @@ def gen_code_expression(expression, output_file):
     # generate code for variable references
     elif expression.kind == NodeType.VAR_EXP:
         # move the address of the variable into the accumulator   
-        gen_l_value(expression, output_file)
+        gen_l_value(expression, string_table, output_file)
         gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the variable into the accumulator', output_file)
 
     # generate code for array reference expressions
     elif expression.kind == NodeType.ARRAY_EXP:
         # move the address of the array cell at the appropriate index into the accumulator
-        gen_l_value(expression, output_file)
+        gen_l_value(expression, string_table, output_file)
         gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the array cell into the accumulator', output_file)
 
     # generate code for assignment expressions
     elif expression.kind == NodeType.ASSIGN_EXP:
 
         # move the address of the left side of the assignment expression into the accumulator
-        gen_l_value(expression.left, output_file)
+        gen_l_value(expression.left, string_table, output_file)
         gen_reg('push', ACC_64, 'push the address of the left side of the assignment expression onto the stack', output_file)
-        gen_code_expression(expression.right, output_file)
+        gen_code_expression(expression.right, string_table, output_file)
         gen_indirect_reg('movq', 0, SP, ARG2_64, 'put the address of the left side of the assignment expression into %rsi', output_file)
         gen_reg_indirect('movq', ACC_64, 0, ARG2_64, 'perform the assignment', output_file)
         gen_immediate_reg('addq', 8, SP, 'pop the left side of the assignment expression off of the stack', output_file)
 
-def gen_l_value(expression, output_file):
+def gen_l_value(expression, string_table, output_file):
     if expression.kind == NodeType.VAR_EXP:
         if expression.declaration.offset is not None:
             gen_reg_reg('movq', FP, ACC_64, 'move the frame pointer into the accumulator', output_file)
@@ -404,7 +405,7 @@ def gen_l_value(expression, output_file):
             gen_immediate_reg('movq', expression.name, ACC_64, 'move the address of the global variable\'s label into the accumulator', output_file)
 
     elif expression.kind == NodeType.ARRAY_EXP:
-        gen_code_expression(expression.expression, output_file)
+        gen_code_expression(expression.expression, string_table, output_file)
         gen_reg_reg('movl', ACC_32, ARG2_32, 'temporarily store the value of the array indexing expression %esi', output_file)
         gen_immediate_reg('imul', 8, ARG2_32, 'convert the array index to an offset', output_file)
 
