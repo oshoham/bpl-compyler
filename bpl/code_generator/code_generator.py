@@ -275,8 +275,8 @@ def gen_code_expression(expression, string_table, output_file):
         gen_immediate_reg('movl', expression.number, ACC_32, 'put an integer value into the accumulator', output_file)
 
     elif expression.kind == NodeType.STR_EXP: 
-        #gen_immediate_reg('movq', expression.string, ACC_64, 'put a string value into the accumulator', output_file)
-        pass
+        gen_immediate_reg('movq', string_table[expression.string], ACC_64, 'put the address of the string "{}" into the accumulator'.format(expression.string), output_file)
+        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the value of the string "{}" into the accumulator'.format(expression.string), output_file)
 
     # generate code for arithmetic expressions
     elif expression.kind == NodeType.MATH_EXP:
