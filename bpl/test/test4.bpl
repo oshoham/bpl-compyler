@@ -1,4 +1,4 @@
-int A[10];
+string A[10];
 
 int f(int x[]) {
     int y;
@@ -9,10 +9,8 @@ int f(int x[]) {
 
 void main(void) {
     string x;
-    A[1] = 3;
+    A[1] = "Oren";
     x = "Foo";
     write(A[1]);
-    writeln();
-    write("Bar");
     writeln();
 }
