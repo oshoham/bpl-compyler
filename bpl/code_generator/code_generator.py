@@ -38,21 +38,72 @@ CALLEE_SAVED_6_64 = 'r15'
 CALLEE_SAVED_6_32 = 'r15d'
 
 # infinite label generator
-labels = count()
-next_label = lambda : '.L{}'.format(next(labels))
-
-string_table = {}
+data_label = count()
+next_label = lambda : '.L{}'.format(next(data_label))
+string_label = count()
 
 def generate_code(type_checked_parse_tree, output_file):
     """Top-level code generation function."""
     compute_offsets(type_checked_parse_tree)
-    gen_header(type_checked_parse_tree, output_file)
+
+    string_table = {}
+    declaration = type_checked_parse_tree
+    while declaration is not None:
+        if declaration.kind == NodeType.FUN_DEC:
+            string_table.update(build_string_table(declaration.body))
+        declaration = declaration.next_node
+
+    gen_header(type_checked_parse_tree, string_table, output_file)
 
     declaration = type_checked_parse_tree
     while declaration is not None:
         if declaration.kind == NodeType.FUN_DEC:
             gen_code_function(declaration, output_file)
         declaration = declaration.next_node
+
+def build_string_table(node):
+    if node.kind == NodeType.STR_EXP:
+        return {node.string: '.S{}'.format(next(string_label))}
+
+    elif node.kind in (NodeType.EXP_STATEMENT, NodeType.WHILE_STATEMENT, NodeType.WRITE_STATEMENT):
+        return build_string_table(node.expression)
+
+    elif node.kind in (NodeType.ASSIGN_EXP, NodeType.COMP_EXP, NodeType.MATH_EXP):
+        string_table = {}
+        string_table.update(build_string_table(node.left))
+        string_table.update(build_string_table(node.right))
+        return string_table
+
+    elif node.kind == NodeType.CMPND_STATEMENT:
+        string_table = {}
+        statement = node.statements
+        while statement is not None:
+            string_table.update(build_string_table(statement))
+            statement = statement.next_node
+        return string_table
+
+    elif node.kind == NodeType.RETURN_STATEMENT:
+        if node.expression is not None:
+            return build_string_table(node.expression)
+        return {}
+
+    elif node.kind == NodeType.IF_STATEMENT:
+        string_table = {}
+        string_table.update(build_string_table(node.statement))
+        if node.else_statement is not None:
+            string_table.update(build_string_table(node.else_statement))
+        return string_table
+
+    elif node.kind == NodeType.FUN_CALL_EXP:
+        string_table = {}
+        arg = node.arguments
+        while arg is not None:
+            string_table.update(build_string_table(arg))
+            arg = arg.next_node
+        return string_table
+    
+    else:
+        return {}
 
 def compute_offsets(parse_tree):
     """Walks through the top-level declarations in parse_tree, computing stack pointer offsets for function parameters and local variables."""
@@ -126,7 +177,7 @@ def gen_direct(opcode, operand, comment, output_file):
 def gen_reg(opcode, reg, comment, output_file):
     output_file.write('\t{} %{} #{}\n'.format(opcode, reg, comment))
 
-def gen_header(parse_tree, output_file):
+def gen_header(parse_tree, string_table, output_file):
     # allocate global variables and arrays
     declaration = parse_tree
     while declaration is not None:
@@ -144,6 +195,11 @@ def gen_header(parse_tree, output_file):
     output_file.write('.WriteStringString: .string "%s "\n')
     output_file.write('.ArrayOverflowString: .string "You fell off the end of an array.\\n"\n')
     output_file.write('.ReadIntString: .string "%d"\n')
+
+    # store all strings used in the program as read-only data
+    for string in string_table:
+        output_file.write('{}: .string "{}"\n'.format(string_table[string], string))
+
     output_file.write('.text\n')
     output_file.write('.globl main\n')
 
