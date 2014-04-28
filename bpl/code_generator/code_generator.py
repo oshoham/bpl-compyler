@@ -227,10 +227,11 @@ def gen_code_statement(statement, local_var_offset, string_table, output_file):
         if statement.expression.type_string == 'int':
             gen_reg_reg('movl', ACC_32, ARG2_32, 'integer value to print = arg2', output_file)
             gen_immediate_reg('movq', '.WriteIntString', ARG1_64, 'printf integer formatting string = arg1', output_file)
-            gen_immediate_reg('movl', 0, ACC_32, 'clear the return value', output_file)
-            gen_direct('call', 'printf', 'call the C-lib printf function', output_file)
         elif statement.expression.type_string == 'string':
-            pass
+            gen_reg_reg('movq', ACC_64, ARG2_64, 'string value to print = arg2', output_file)
+            gen_immediate_reg('movq', '.WriteStringString', ARG1_64, 'printf string formatting string = arg1', output_file)
+        gen_immediate_reg('movl', 0, ACC_32, 'clear the return value', output_file)
+        gen_direct('call', 'printf', 'call the C-lib printf function', output_file)
 
     # generate code for writeln statements
     elif statement.kind == NodeType.WRITELN_STATEMENT:
@@ -276,7 +277,7 @@ def gen_code_expression(expression, string_table, output_file):
 
     elif expression.kind == NodeType.STR_EXP: 
         gen_immediate_reg('movq', string_table[expression.string], ACC_64, 'put the address of the string "{}" into the accumulator'.format(expression.string), output_file)
-        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the value of the string "{}" into the accumulator'.format(expression.string), output_file)
+        #gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the value of the string "{}" into the accumulator'.format(expression.string), output_file)
 
     # generate code for arithmetic expressions
     elif expression.kind == NodeType.MATH_EXP:

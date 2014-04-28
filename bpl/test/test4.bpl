@@ -12,4 +12,7 @@ void main(void) {
     A[1] = 3;
     x = "Foo";
     write(A[1]);
+    writeln();
+    write("Bar");
+    writeln();
 }
