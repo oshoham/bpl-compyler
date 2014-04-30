@@ -9,8 +9,12 @@ int f(int x[]) {
 
 void main(void) {
     string x;
-    A[1] = "Oren";
-    x = "Foo";
-    write(A[1]);
-    writeln();
+    int i;
+    i = 0;
+    x = "Oren";
+    while(i < 10) {
+        write(x);
+        writeln();
+        i = i+1;
+    }
 }

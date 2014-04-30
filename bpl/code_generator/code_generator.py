@@ -66,7 +66,7 @@ def build_string_table(node):
     if node.kind == NodeType.STR_EXP:
         return {node.string: '.S{}'.format(next(string_label))}
 
-    elif node.kind in (NodeType.EXP_STATEMENT, NodeType.WHILE_STATEMENT, NodeType.WRITE_STATEMENT):
+    elif node.kind in (NodeType.EXP_STATEMENT, NodeType.WRITE_STATEMENT):
         return build_string_table(node.expression)
 
     elif node.kind in (NodeType.ASSIGN_EXP, NodeType.COMP_EXP, NodeType.MATH_EXP):
@@ -94,6 +94,9 @@ def build_string_table(node):
         if node.else_statement is not None:
             string_table.update(build_string_table(node.else_statement))
         return string_table
+    
+    elif node.kind == NodeType.WHILE_STATEMENT:
+        return build_string_table(node.statement)
 
     elif node.kind == NodeType.FUN_CALL_EXP:
         string_table = {}
@@ -270,6 +273,18 @@ def gen_code_statement(statement, local_var_offset, string_table, output_file):
     # generate code for expression statements
     elif statement.kind == NodeType.EXP_STATEMENT:
         gen_code_expression(statement.expression, string_table, output_file)
+
+    elif statement.kind == NodeType.WHILE_STATEMENT:
+        loop_label = next_label()
+        continue_label = next_label()
+        output_file.write('{}:\n'.format(loop_label))
+        gen_code_expression(statement.condition, string_table, output_file)
+        gen_immediate_reg('cmpl', 0, ACC_32, 'check whether the while condition evaluates to true or false', output_file)
+        gen_direct('je', continue_label, 'jump to the end of the while statement code if the condition evaluates to false', output_file)
+        gen_code_statement(statement.statement, local_var_offset, string_table, output_file)
+        gen_direct('jmp', loop_label, 'jump back to the beginning of the while loop', output_file)
+        output_file.write('{}:\n'.format(continue_label))
+        
 
 def gen_code_expression(expression, string_table, output_file):
     if expression.kind == NodeType.NUM_EXP:
