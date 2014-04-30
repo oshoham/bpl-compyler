@@ -20,9 +20,10 @@ if args.output_file:
     if args.stop_at_assembly:
         assembly_file_name = args.output_file
 # generate the assembly file using the bpl package
-subprocess.call(['python', '-m', 'bpl', args.FILE, assembly_file_name])
+assembly_status = subprocess.call(['python', '-m', 'bpl', args.FILE, assembly_file_name])
 # if we are generating a binary file as well as assembly:
-if not args.stop_at_assembly:
+if not args.stop_at_assembly and assembly_status == 0:
+    print 'woo'
     # generate the binary file
     subprocess.call(['gcc', assembly_file_name, '-o', output_file_name])
     # clean up the assembly file
