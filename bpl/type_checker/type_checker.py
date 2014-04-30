@@ -390,41 +390,28 @@ def type_check_expression(expression, debug):
                     expression.type_string
             )
 
-    elif expression.kind is NodeType.COMP_EXP:
-        type_check_expression(expression.left, debug)
-        type_check_expression(expression.right, debug)
-        if expression.left.type_string != expression.right.type_string:
-            raise TypeCheckerException(expression.line_number, 'Left side of comparison expression has type "{}", but right side has type "{}".'.format(
-                expression.left.type_string,
-                expression.right.type_string
-                )
-            )
-        expression.type_string = expression.left.type_string
-
-        if debug:
-            print 'Comparison expression on line {} assigned type "{}".'.format(
-                    expression.line_number,
-                    expression.type_string
-            )
-
-    elif expression.kind is NodeType.MATH_EXP:
+    elif expression.kind in (Nodetype.COMP_EXP, NodeType.MATH_EXP):
+        expression_type = 'comparison' if expression.kind == NodeType.COMP_EXP else 'arithmetic'
         type_check_expression(expression.left, debug)
         type_check_expression(expression.right, debug)
         if expression.left.type_string != 'int':
-            raise TypeCheckerException(expression.line_number, 'Left side of arithmetic expression has type "{}", but should have type "int".'.format(
+            raise TypeCheckerException(expression.line_number, 'Left side of {} expression has type "{}", but should have type "int".'.format(
+                expression_type,
                 expression.left.type_string
                 )
             )
 
         if expression.right.type_string != 'int':
-            raise TypeCheckerException(expression.line_number, 'Right side of arithmetic expression has type "{}", but should have type "int".'.format(
+            raise TypeCheckerException(expression.line_number, 'Right side of {} expression has type "{}", but should have type "int".'.format(
+                expression_type,
                 expression.right.type_string
                 )
             )
         expression.type_string = 'int' 
 
         if debug:
-            print 'Arithmetic expression on line {} assigned type "{}".'.format(
+            print '{} expression on line {} assigned type "{}".'.format(
+                    expression_type.capitalize(),
                     expression.line_number,
                     expression.type_string
             )
