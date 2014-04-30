@@ -8,12 +8,12 @@ int f(int x[]) {
 }
 
 void main(void) {
-    string x;
+    string *x;
     int i;
     i = 0;
-    x = "Oren";
-    while(x < "foo") {
-        write(x);
+    *x = "Oren";
+    while(i < 10) {
+        write(*x);
         writeln();
         i = i+1;
     }

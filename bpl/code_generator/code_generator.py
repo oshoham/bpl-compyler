@@ -392,7 +392,10 @@ def gen_code_expression(expression, string_table, output_file):
     elif expression.kind == NodeType.VAR_EXP:
         # move the address of the variable into the accumulator   
         gen_l_value(expression, string_table, output_file)
-        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the variable into the accumulator', output_file)
+        # if the variable is a pointer, leave its address in the accumulator
+        # otherwise, move its value into the accumulator
+        if not expression.declaration.is_pointer:
+            gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the variable into the accumulator', output_file)
 
     # generate code for array reference expressions
     elif expression.kind == NodeType.ARRAY_EXP:
@@ -410,6 +413,20 @@ def gen_code_expression(expression, string_table, output_file):
         gen_indirect_reg('movq', 0, SP, ARG2_64, 'put the address of the left side of the assignment expression into %rsi', output_file)
         gen_reg_indirect('movq', ACC_64, 0, ARG2_64, 'perform the assignment', output_file)
         gen_immediate_reg('addq', 8, SP, 'pop the left side of the assignment expression off of the stack', output_file)
+
+    # generate code for negation expressions
+    elif expression.kind == NodeType.NEG_EXP:
+        gen_code_expression(expression.expression, string_table, output_file)
+        gen_immediate_reg('imul', -1, ACC_32, 'multiply the value of the expression by negative one', output_file)
+
+    elif expression.kind == NodeType.DEREF_EXP:
+        # move the value of the pointer (an address) into the accumulator
+        gen_code_expression(expression.expression, string_table, output_file)
+        # get the value at the address in the accumulator
+        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the value at the address stored in the pointer into the accumulator', output_file)
+
+    elif expression.kind == NodeType.ADDRESS_EXP:
+        gen_l_value(expression.expression, string_table, output_file)
 
 def gen_l_value(expression, string_table, output_file):
     if expression.kind == NodeType.VAR_EXP:
