@@ -390,7 +390,7 @@ def type_check_expression(expression, debug):
                     expression.type_string
             )
 
-    elif expression.kind in (Nodetype.COMP_EXP, NodeType.MATH_EXP):
+    elif expression.kind in (NodeType.COMP_EXP, NodeType.MATH_EXP):
         expression_type = 'comparison' if expression.kind == NodeType.COMP_EXP else 'arithmetic'
         type_check_expression(expression.left, debug)
         type_check_expression(expression.right, debug)

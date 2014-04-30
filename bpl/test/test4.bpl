@@ -12,7 +12,7 @@ void main(void) {
     int i;
     i = 0;
     x = "Oren";
-    while(i < 10) {
+    while(x < "foo") {
         write(x);
         writeln();
         i = i+1;
