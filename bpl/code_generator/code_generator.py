@@ -450,4 +450,4 @@ def gen_l_value(expression, string_table, output_file):
         gen_reg_reg('addq', ARG2_64, ACC_64, 'add the array index (as an offset) to the address of the first element of the array', output_file)
 
     elif expression.kind == NodeType.DEREF_EXP:
-        pass
+        gen_l_value(expression.expression, string_table, output_file)
