@@ -420,7 +420,10 @@ def type_check_expression(expression, debug):
         type_check_expression(expression.expression, debug)
         if expression.expression.kind not in (NodeType.VAR_EXP, NodeType.ARRAY_EXP):
             raise TypeCheckerException(expression.line_number, 'Can only take the address of a variable or array element.')
-        expression.type_string = 'int'
+        if expression.expression.type_string == 'int':
+            expression.type_string = 'pointer to int'
+        else: # expression.expression.type_string == 'string'
+            expression.type_string = 'pointer to string'
 
         if debug:
             print 'Address expression on line {} assigned type "int".'.format(expression.line_number)
