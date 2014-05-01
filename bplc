@@ -42,6 +42,7 @@ except (ScannerException, ParserException, TypeCheckerException) as e:
     input_file.close()
     assembly_file.close()
     sys.exit(1)
+assembly_file.close()
 
 #assembly_status = subprocess.call(['python', '-m', 'bpl', args.FILE, assembly_file_name])
 # if we are generating a binary file as well as assembly:
