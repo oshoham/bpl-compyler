@@ -428,6 +428,15 @@ def gen_code_expression(expression, string_table, output_file):
     elif expression.kind == NodeType.ADDRESS_EXP:
         gen_l_value(expression.expression, string_table, output_file)
 
+    elif expression.kind == NodeType.READ_EXP:
+        gen_immediate_reg('sub', 40, SP, 'decrement the stack pointer by 40 bytes', output_file)
+        gen_reg_reg('movq', SP, ARG2_64, 'move the stack pointer into %rsi', output_file)
+        gen_immediate_reg('addq', 24, ARG2_64, 'set %rsi to contain the address 24 bytes below the stack pointer', output_file)
+        gen_immediate_reg('movq', '.ReadIntString', ARG1_64, 'put .ReadIntString into %rdi', output_file)
+        gen_direct('call', 'scanf', 'call the C-lib scanf function', output_file)
+        gen_indirect_reg('movl', 24, SP, ACC_32, 'move the integer read from stdin into the accumulator', output_file)
+        gen_immediate_reg('addq', 40, SP, 'increment the stack pointer by 40 bytes', output_file)
+
 def gen_l_value(expression, string_table, output_file):
     if expression.kind == NodeType.VAR_EXP:
         if expression.declaration.offset is not None:
