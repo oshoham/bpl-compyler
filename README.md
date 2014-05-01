@@ -21,7 +21,8 @@ The code is organized as follows:
     ├── bplc                    # bpl compilation script. Use this to compile .bpl files!
     └── bpl                     # bpl python package
         ├── __init__.py
-        ├── __main__.py         # main module for bpl package
+        |
+        ├── compiler.py         # compiler module, combines scanner, parser, type checker, and code generator
         |
         ├── scanner             # scanner package
         │   ├── __init__.py
