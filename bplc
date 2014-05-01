@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import argparse, os, subprocess, sys
+import argparse, os, subprocess, sys, tempfile
 from bpl.compiler import compile
 from bpl.scanner.scanner import ScannerException
 from bpl.parser.parser import ParserException
@@ -14,7 +14,11 @@ args = parser.parse_args()
 
 # default output file and assembly file names
 output_file_name = 'a.out'
-assembly_file_name = os.path.basename(args.FILE).rstrip('.bpl') + '.s'
+if args.stop_at_assembly:
+    assembly_file_name = os.path.basename(args.FILE).rstrip('.bpl') + '.s'
+else: 
+    # store assembly code in a temporary file
+    assembly_file_name = tempfile.mkstemp(suffix='.s', dir=os.getcwd())[1]
 
 # if an output file name is specified:
 if args.output_file:
@@ -45,10 +49,9 @@ with open(assembly_file_name, 'w') as assembly_file:
 
 input_file.close()
 
-#assembly_status = subprocess.call(['python', '-m', 'bpl', args.FILE, assembly_file_name])
 # if we are generating a binary file as well as assembly:
 if not args.stop_at_assembly:
     # generate the binary file
     subprocess.call(['gcc', assembly_file_name, '-o', output_file_name])
     # clean up the assembly file
-    subprocess.call(['rm', assembly_file_name])
+    os.remove(assembly_file_name)
