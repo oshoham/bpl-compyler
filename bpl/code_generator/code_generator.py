@@ -284,7 +284,6 @@ def gen_code_statement(statement, local_var_offset, string_table, output_file):
         gen_code_statement(statement.statement, local_var_offset, string_table, output_file)
         gen_direct('jmp', loop_label, 'jump back to the beginning of the while loop', output_file)
         output_file.write('{}:\n'.format(continue_label))
-        
 
 def gen_code_expression(expression, string_table, output_file):
     if expression.kind == NodeType.NUM_EXP:
@@ -423,6 +422,7 @@ def gen_code_expression(expression, string_table, output_file):
         # move the value of the pointer (an address) into the accumulator
         gen_code_expression(expression.expression, string_table, output_file)
         # get the value at the address in the accumulator
+        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the address stored in the pointer into the accumulator', output_file)
         gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the value at the address stored in the pointer into the accumulator', output_file)
 
     elif expression.kind == NodeType.ADDRESS_EXP:
