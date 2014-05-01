@@ -34,15 +34,16 @@ except IOError:
     sys.exit(1)
 
 # generate the assembly file using the bpl package
-try:
-    assembly_file = open(assembly_file_name, 'w')
-    compile(input_file, assembly_file)
-except (ScannerException, ParserException, TypeCheckerException) as e:
-    print e.message
-    input_file.close()
-    assembly_file.close()
-    sys.exit(1)
-assembly_file.close()
+with open(assembly_file_name, 'w') as assembly_file:
+    try:
+        compile(input_file, assembly_file)
+    except (ScannerException, ParserException, TypeCheckerException) as e:
+        print e.message
+        input_file.close()
+        assembly_file.close()
+        sys.exit(1)
+
+input_file.close()
 
 #assembly_status = subprocess.call(['python', '-m', 'bpl', args.FILE, assembly_file_name])
 # if we are generating a binary file as well as assembly:
