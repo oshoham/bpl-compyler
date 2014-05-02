@@ -114,7 +114,7 @@ def compute_offsets(parse_tree):
     declaration = parse_tree 
     while declaration is not None:
         if declaration.kind == NodeType.FUN_DEC:
-            parameter_offset = 0
+            parameter_offset = 8
             param = declaration.params
             while param is not None:
                 parameter_offset += 8
