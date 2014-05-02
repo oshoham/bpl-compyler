@@ -54,4 +54,4 @@ if not args.stop_at_assembly:
     # generate the binary file
     subprocess.call(['gcc', assembly_file_name, '-o', output_file_name])
     # clean up the assembly file
-    os.remove(assembly_file_name)
+    subprocess.call(['rm', assembly_file_name])
