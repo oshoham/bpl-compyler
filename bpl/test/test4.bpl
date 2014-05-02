@@ -1,8 +1,8 @@
 void main(void) {
-    string x;
-    string *y;
-    x = "Oren";
-    y = &x;
-    write(*y);
+    int x;
+    int i;
+    x = read();
+    i = 0;
+    write(x);
     writeln();
 }
