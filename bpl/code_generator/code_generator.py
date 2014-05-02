@@ -429,6 +429,7 @@ def gen_code_expression(expression, string_table, output_file):
         gen_l_value(expression.expression, string_table, output_file)
 
     elif expression.kind == NodeType.READ_EXP:
+        gen_immediate_reg('movl', 0, ACC_32, 'clear the return value', output_file)
         gen_immediate_reg('sub', 40, SP, 'decrement the stack pointer by 40 bytes', output_file)
         gen_reg_reg('movq', SP, ARG2_64, 'move the stack pointer into %rsi', output_file)
         gen_immediate_reg('addq', 24, ARG2_64, 'set %rsi to contain the address 24 bytes below the stack pointer', output_file)
