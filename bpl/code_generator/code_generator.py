@@ -393,8 +393,8 @@ def gen_code_expression(expression, string_table, output_file):
         gen_l_value(expression, string_table, output_file)
         # if the variable is a pointer, leave its address in the accumulator
         # otherwise, move its value into the accumulator
-        if not expression.declaration.is_pointer:
-            gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the variable into the accumulator', output_file)
+        #if not expression.declaration.is_pointer:
+        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'put the value of the variable into the accumulator', output_file)
 
     # generate code for array reference expressions
     elif expression.kind == NodeType.ARRAY_EXP:
@@ -422,7 +422,7 @@ def gen_code_expression(expression, string_table, output_file):
         # move the value of the pointer (an address) into the accumulator
         gen_code_expression(expression.expression, string_table, output_file)
         # get the value at the address in the accumulator
-        gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the address stored in the pointer into the accumulator', output_file)
+        #gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the address stored in the pointer into the accumulator', output_file)
         gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the value at the address stored in the pointer into the accumulator', output_file)
 
     elif expression.kind == NodeType.ADDRESS_EXP:
