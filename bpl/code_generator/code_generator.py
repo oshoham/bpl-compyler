@@ -380,7 +380,11 @@ def gen_code_expression(expression, string_table, output_file):
             num_args += 1
         # push the function arguments onto the stack in reverse order
         while len(args) != 0:
-            gen_code_expression(args.pop(), string_table, output_file)
+            arg = args.pop()
+            if arg.type_string in ('int array', 'string array'):
+                gen_l_value(arg, string_table, output_file)
+            else:
+                gen_code_expression(arg, string_table, output_file)
             gen_reg('push', ACC_64, 'push the function argument onto the stack', output_file)
         gen_reg('push', FP, 'push the frame pointer onto the stack', output_file)
         gen_direct('call', expression.name, 'call function {}'.format(expression.name), output_file)
@@ -456,6 +460,9 @@ def gen_l_value(expression, string_table, output_file):
         if expression.declaration.offset is not None:
             gen_reg_reg('movq', FP, ACC_64, 'move the frame pointer into the accumulator', output_file)
             gen_immediate_reg('addq', expression.declaration.offset, ACC_64, 'update the accumulator to contain the address of the local array "{}"'.format(expression.name), output_file)
+            # if the array is a function parameter
+            if expression.declaration.size == -1:
+                gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the address of the function parameter array into the accumulator', output_file)
         else: # the array is global
             gen_immediate_reg('movq', expression.name, ACC_64, 'move the address of the global array\'s label into the accumulator', output_file)
         gen_reg_reg('addq', ARG2_64, ACC_64, 'add the array index (as an offset) to the address of the first element of the array', output_file)
