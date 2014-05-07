@@ -3,7 +3,9 @@ bpl
 
 A compiler for Bob's Programming Language, a simple, C-like language. Implemented for the Spring 2014 CS331 course at Oberlin College.
 
-Written in Python 2.7.6. Compiles to GAS instructions.
+Currently, this compiler generates GAS instructions, so it is only capable of running on Linux machines that are capable of compiling GAS instructions.
+
+Written in Python 2.7.6. 
 
 ### Structure
 
@@ -52,13 +54,35 @@ The code is organized as follows:
 
 (credit to [@daf-](https://github.com/daf-/) for this diagram and the structure of this README)
 
+### Installation
+
+To install the bpl package and bplc compiler script, run the setup.py script from the top-level directory as follows:
+
+```
+$ python setup.py install
+```
+
 ### Running the Compiler
 
-To run the compiler, run the `bplc` script from the top-level directory as follows:
+To run the compiler, run the `bplc` script as follows:
 
 ```
-$ ./bplc <filename>
+$ bplc <filename>
 ```
+
+This will generate a binary output file named a.out. If you want to specify an output file name, you can use the "-o" flag as follows:
+
+```
+$ bplc <filename> -o <output_filename>
+```
+
+If you want to stop the compilation process at assembly generation, you can use the "-s" flag:
+
+```
+$ bplc <filename> -s
+```
+
+This will generate a GAS file named <filename>.s.
 
 ### Tests
 
