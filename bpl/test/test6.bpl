@@ -1,12 +1,17 @@
 void main(void) {
-    if (1) {
-        int x;
-        int A[3];
-        int y;
+    int a[10];
+    int i = 0;
+    while(i < 10) {
+        a[i] = i;
+        i = i + 1;
     }
-    else {
-        int w;
-        int B[2];
-        int z;
+    printArray(a);
+}
+
+void printArray(int x[]) {
+    int i = 0;
+    while(i < 10) {
+        write(x[i]);
+        writeln();
     }
 }

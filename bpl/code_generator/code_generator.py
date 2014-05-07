@@ -416,15 +416,19 @@ def gen_code_expression(expression, string_table, output_file):
         gen_code_expression(expression.expression, string_table, output_file)
         gen_immediate_reg('imul', -1, ACC_32, 'multiply the value of the expression by negative one', output_file)
 
+    # generate code for pointer dereferencing expressions
     elif expression.kind == NodeType.DEREF_EXP:
         # move the value of the pointer (an address) into the accumulator
         gen_code_expression(expression.expression, string_table, output_file)
         # get the value at the address in the accumulator
         gen_indirect_reg('movq', 0, ACC_64, ACC_64, 'move the value at the address stored in the pointer into the accumulator', output_file)
 
+    # generate code for address expressions
     elif expression.kind == NodeType.ADDRESS_EXP:
+        # move the variable or array's address into the accumulator
         gen_l_value(expression.expression, string_table, output_file)
 
+    # generate code for reading integer input from stdin
     elif expression.kind == NodeType.READ_EXP:
         gen_immediate_reg('movl', 0, ACC_32, 'clear the return value', output_file)
         gen_immediate_reg('sub', 40, SP, 'decrement the stack pointer by 40 bytes', output_file)
