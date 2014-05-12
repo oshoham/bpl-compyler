@@ -70,6 +70,12 @@ To run the compiler, run the `bplc` script as follows:
 $ bplc <filename>
 ```
 
+If you can't install bpl or simply don't want to, you can still run the `bplc` script from the top-level directory: 
+
+```
+$ ./bplc <filename>
+```
+
 This will generate a binary output file named a.out. If you want to specify an output file name, you can use the "-o" flag as follows:
 
 ```
@@ -82,7 +88,7 @@ If you want to stop the compilation process at assembly generation, you can use 
 $ bplc <filename> -s
 ```
 
-This will generate a GAS file named <filename>.s.
+This will generate a GAS file named \<filename\>.s.
 
 ### Tests
 
