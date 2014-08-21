@@ -53,7 +53,7 @@ The code is organized as follows:
             ├── type_checker_test.py
             └── code_generator_test.py
 
-(credit to [@daf-](https://github.com/daf-/) for this diagram and the structure of this README)
+(credit to [@dan-f](https://github.com/dan-f/) for this diagram and the structure of this README)
 
 ### Installation
 
